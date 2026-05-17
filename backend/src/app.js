@@ -51,8 +51,11 @@ if (process.env.NODE_ENV === 'production') {
 // SECURITY MIDDLEWARE
 // ================================
 const allowedOrigins = [
-  process.env.CLIENT_URL,
-  process.env.ADMIN_URL,
+  process.env.CLIENT_URL?.replace(/\/$/, ''),
+  process.env.ADMIN_URL?.replace(/\/$/, ''),
+  'https://photowalagift.online',
+  'https://www.photowalagift.online',
+  'https://admin.photowalagift.online',
   'http://localhost:5173',
   'http://localhost:5174',
 ].filter(Boolean);
@@ -69,8 +72,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.options('*', cors());
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -83,7 +85,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   exposedHeaders: ['set-cookie'],
-}));
+};
+
+app.options(/\/.*/, cors(corsOptions));
+app.use(cors(corsOptions));
 
 // ================================
 // PAYMENTS WEBHOOK (MUST BE BEFORE express.json)
