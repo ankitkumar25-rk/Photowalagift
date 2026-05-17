@@ -194,34 +194,47 @@ function QuickAddressModal({ onClose, onSave }) {
             <label className="block text-xs uppercase tracking-wider text-[#5b3f2f]/60 mb-1.5 font-semibold">
               Address Line 1
             </label>
-            <div className="relative">
+            {isLoaded ? (
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  name="line1"
+                  defaultValue=""
+                  onChange={handleLine1Change}
+                  onBlur={handleLine1Blur}
+                  placeholder="Start typing your address..."
+                  autoComplete="off"
+                  required
+                  className={`w-full rounded-xl px-4 py-3 pr-10 border bg-white/80 text-[#5b3f2f] placeholder-[#5b3f2f]/30 focus:outline-none focus:ring-2 transition-all duration-200 font-[DM_Sans] ${
+                    isValidAddress ? 'border-green-400 focus:ring-green-100' : 'border-[#f5e7d8] focus:ring-[#b88a2f]/20 focus:border-[#b88a2f]'
+                  }`}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {isValidAddress ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : line1Value ? (
+                    <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
+                  ) : null}
+                </div>
+                {!isValidAddress && line1Value?.length > 3 && (
+                  <p className="text-xs text-[#b88a2f] mt-1.5 flex items-center gap-1 italic">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                    Select from suggestions for accurate delivery
+                  </p>
+                )}
+              </div>
+            ) : (
               <input
                 ref={inputRef}
                 type="text"
                 name="line1"
-                defaultValue=""
-                onChange={handleLine1Change}
-                onBlur={handleLine1Blur}
-                placeholder="Start typing your address..."
-                autoComplete="off"
+                value={form.line1}
+                onChange={(e) => setForm(f => ({ ...f, line1: e.target.value }))}
+                placeholder="Flat, House no., Street, Area"
                 required
-                className={`w-full rounded-xl px-4 py-3 pr-10 border bg-white/80 text-[#5b3f2f] placeholder-[#5b3f2f]/30 focus:outline-none focus:ring-2 transition-all duration-200 font-[DM_Sans] ${
-                  isValidAddress ? 'border-green-400 focus:ring-green-100' : 'border-[#f5e7d8] focus:ring-[#b88a2f]/20 focus:border-[#b88a2f]'
-                }`}
+                className="input-field"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {isValidAddress ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : line1Value ? (
-                  <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
-                ) : null}
-              </div>
-            </div>
-            {!isValidAddress && line1Value?.length > 3 && (
-              <p className="text-xs text-[#b88a2f] mt-1.5 flex items-center gap-1 italic">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                Select from suggestions for accurate delivery
-              </p>
             )}
           </div>
 
