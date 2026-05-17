@@ -232,7 +232,7 @@ export default function AdminProductForm() {
                 </select>
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-[#7a655c] mb-2">Product Identifiers & Specifications</label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>

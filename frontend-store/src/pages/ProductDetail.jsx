@@ -641,7 +641,7 @@ export default function ProductDetail() {
             {(product.tags?.length > 0 || product.certifications?.length > 0) && (
               <div className="space-y-3 pt-2">
                 {product.tags?.length > 0 && (
-                  <div className="bg-[#fdfbf7] border border-[#f3ebdf] p-4 rounded-2xl flex flex-wrap gap-2">
+                  <div className="bg-[#fdfbf7] border border-[#f3ebdf] p-6 rounded-2xl flex flex-wrap gap-2">
                     {product.tags.map((t) => (
                       <span key={t} className="px-2.5 py-1 bg-cream-200/60 hover:bg-cream-200 text-gray-600 text-xs font-semibold rounded-full transition-colors">
                         #{t}
