@@ -74,20 +74,35 @@ if (process.env.NODE_ENV === 'production') {
 
 const corsOptions = {
   origin: (origin, callback) => {
+    // We allow all origins that match our list
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`✖ CORS blocked request from origin: ${origin}`);
-      callback(new Error(`CORS: origin ${origin} not allowed`));
+      callback(null, false);
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'x-csrf-token'],
   exposedHeaders: ['set-cookie'],
 };
 
-app.options(/\/.*/, cors(corsOptions));
+// Bulletproof Express 5 preflight handler
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token, x-csrf-token');
+      return res.status(200).end();
+    }
+  }
+  next();
+});
+
 app.use(cors(corsOptions));
 
 // ================================
