@@ -178,7 +178,7 @@ export const getProductById = asyncHandler(async (req, res) => {
       _count: { select: { reviews: true } },
     },
   });
-  if (!product || !product.isActive) throw createError('Product not found', 404);
+  if (!product) throw createError('Product not found', 404);
   res.json({ success: true, data: normalizeProductMedia(product) });
 });
 
