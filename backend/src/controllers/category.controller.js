@@ -9,7 +9,7 @@ export const listCategories = asyncHandler(async (req, res) => {
     orderBy: { sortOrder: 'asc' },
     include: {
       children: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-      _count: { select: { products: true } },
+      _count: { select: { products: { where: { isActive: true } } } },
     },
   });
   res.json({ success: true, data: categories });

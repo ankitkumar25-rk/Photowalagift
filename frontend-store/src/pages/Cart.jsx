@@ -181,7 +181,7 @@ export default function Cart() {
   };
 
   return (
-    <div className="min-h-screen bg-cream-100 luxury-grain pt-32 pb-24 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-cream-100 luxury-grain pt-28 sm:pt-32 pb-20 sm:pb-24 px-3 sm:px-4 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-125 h-125 bg-brand-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
       <div className="absolute bottom-0 left-0 w-100 h-100 bg-brand-secondary/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4" />
@@ -274,11 +274,11 @@ export default function Cart() {
               {/* Free shipping progress bar */}
               {shipping > 0 && (
                 <div className="px-6 py-4 bg-linear-to-r from-brand-surface/40 to-transparent border-b-2 border-brand-secondary/20">
-                  <div className="flex items-center justify-between text-sm mb-2.5">
-                    <span className="font-bold text-brand-primary flex items-center gap-2">
-                      <Truck className="w-4 h-4" /> Add ₹{freeShipRemaining.toFixed(0)} more for FREE Shipping
+                  <div className="flex items-center justify-between text-xs sm:text-sm mb-2.5 gap-2">
+                    <span className="font-bold text-brand-primary flex items-center gap-1.5 sm:gap-2 min-w-0">
+                      <Truck className="w-4 h-4 shrink-0" /> <span className="truncate">Add ₹{freeShipRemaining.toFixed(0)} more for FREE Shipping</span>
                     </span>
-                    <span className="text-brand-secondary font-bold text-xs bg-brand-surface px-2.5 py-1 rounded-full">{freeShipProgress.toFixed(0)}%</span>
+                    <span className="text-brand-secondary font-bold text-xs bg-brand-surface px-2 sm:px-2.5 py-1 rounded-full shrink-0">{freeShipProgress.toFixed(0)}%</span>
                   </div>
                   <div className="h-2.5 bg-cream-200 rounded-full overflow-hidden shadow-inner">
                     <div
@@ -311,7 +311,7 @@ export default function Cart() {
 
             {/* -- Order summary -- */}
             <div className="lg:col-span-2 space-y-4 sticky top-24">
-              <div className="card p-6 sm:p-8 border-2 border-cream-200 shadow-lg rounded-3xl bg-white">
+              <div className="card p-4 sm:p-6 md:p-8 border-2 border-cream-200 shadow-lg rounded-3xl bg-white">
                 <div className="flex items-center gap-3 pb-6 border-b-2 border-cream-200 mb-6">
                   <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center shrink-0">
                     <ShoppingCart className="w-5 h-5 text-brand-primary" />
@@ -324,7 +324,7 @@ export default function Cart() {
                   {/* Per-item breakdown */}
                   <div className="space-y-3 pb-4 border-b-2 border-cream-200 max-h-52 overflow-y-auto pr-2 custom-scrollbar">
                     {items.map((item) => (
-                      <div key={item.id ?? item.productId} className="flex justify-between text-xs sm:text-sm gap-4">
+                      <div key={item.id ?? item.productId} className="flex justify-between text-xs sm:text-sm gap-2 sm:gap-4">
                         <span className="text-gray-600 truncate flex-1">
                           {item.product?.name} <span className="text-[10px] font-bold text-gray-400">×{item.quantity}</span>
                         </span>
@@ -363,9 +363,9 @@ export default function Cart() {
 
                 {/* CTA */}
                 {user ? (
-                  <Link to="/checkout" className="btn-primary w-full justify-center mt-6 text-base py-4 gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all">
+                  <Link to="/checkout" className="btn-primary w-full justify-center mt-6 text-sm sm:text-base py-3.5 sm:py-4 gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all">
                     <span>Proceed to Checkout</span>
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                   </Link>
                 ) : (
                   <div className="mt-6 space-y-3">

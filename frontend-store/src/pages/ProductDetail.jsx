@@ -641,12 +641,20 @@ export default function ProductDetail() {
             {(product.tags?.length > 0 || product.certifications?.length > 0) && (
               <div className="space-y-2 pt-2">
                 {product.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {product.tags.map((t) => (
-                      <span key={t} className="px-2.5 py-1 bg-cream-200 text-gray-600 text-xs font-semibold rounded-full">
-                        #{t}
-                      </span>
-                    ))}
+                  <div className="relative max-h-20 sm:max-h-28 overflow-hidden">
+                    <div className="flex flex-wrap gap-1.5">
+                      {product.tags.slice(0, 12).map((t) => (
+                        <span key={t} className="px-2.5 py-1 bg-cream-200 text-gray-600 text-xs font-semibold rounded-full">
+                          #{t}
+                        </span>
+                      ))}
+                      {product.tags.length > 12 && (
+                        <span className="px-2.5 py-1 bg-cream-100 text-gray-400 text-xs font-semibold rounded-full">
+                          +{product.tags.length - 12} more
+                        </span>
+                      )}
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
                   </div>
                 )}
                 {product.certifications?.length > 0 && (
@@ -695,10 +703,10 @@ export default function ProductDetail() {
                 {/* SKU / weight */}
                 <div className="grid sm:grid-cols-2 gap-4 not-prose pt-4 border-t border-cream-200">
                   {[
-                    { label: 'Unit',     value: product.unit },
-                    { label: 'SKU',      value: product.sku || '—' },
+                    { label: 'Size',     value: product.unit || '—' },
                     { label: 'Weight',   value: product.weight ? `${product.weight}g` : '—' },
                     { label: 'Category', value: product.category?.name || '—' },
+                    { label: 'SKU',      value: product.sku || '—' },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between py-2 border-b border-cream-100 text-sm">
                       <span className="text-gray-500 font-medium">{label}</span>

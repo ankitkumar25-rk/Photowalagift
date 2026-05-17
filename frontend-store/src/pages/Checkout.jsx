@@ -30,6 +30,8 @@ function QuickAddressModal({ onClose, onSave }) {
   const [pincodeError, setPincodeError] = useState(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [suggestedAddress, setSuggestedAddress] = useState('');
+  // Separate tracking for line1 to avoid React vs Google Autocomplete conflict
+  const [line1Value, setLine1Value] = useState('');
 
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
@@ -58,9 +60,11 @@ function QuickAddressModal({ onClose, onSave }) {
       const get = (type) =>
         place.address_components.find(c => c.types.includes(type))?.long_name || '';
 
+      const formatted = place.formatted_address;
+      setLine1Value(formatted);
       setForm(prev => ({
         ...prev,
-        line1: place.formatted_address,
+        line1: formatted,
         city: get('locality') || get('sublocality_level_1') || get('administrative_area_level_2'),
         state: get('administrative_area_level_1'),
         pincode: get('postal_code'),
@@ -71,7 +75,18 @@ function QuickAddressModal({ onClose, onSave }) {
 
   const handle = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-    if (e.target.name === 'line1') setIsValidAddress(false);
+  };
+
+  // Separate handler for line1: uncontrolled input synced on blur
+  const handleLine1Change = (e) => {
+    setLine1Value(e.target.value);
+    setIsValidAddress(false);
+  };
+
+  const handleLine1Blur = () => {
+    const val = inputRef.current?.value || '';
+    setLine1Value(val);
+    setForm(prev => ({ ...prev, line1: val }));
   };
 
   const handlePincodeChange = async (e) => {
@@ -103,6 +118,10 @@ function QuickAddressModal({ onClose, onSave }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    // Sync line1 from the DOM ref before submit (in case blur didn't fire)
+    const currentLine1 = inputRef.current?.value || '';
+    setForm(prev => ({ ...prev, line1: currentLine1 }));
+    form.line1 = currentLine1;
     setIsValidating(true);
     try {
       const { data: vData } = await api.post('/users/addresses/validate', {
@@ -180,8 +199,9 @@ function QuickAddressModal({ onClose, onSave }) {
                 ref={inputRef}
                 type="text"
                 name="line1"
-                value={form.line1}
-                onChange={handle}
+                defaultValue=""
+                onChange={handleLine1Change}
+                onBlur={handleLine1Blur}
                 placeholder="Start typing your address..."
                 autoComplete="off"
                 required
@@ -192,12 +212,12 @@ function QuickAddressModal({ onClose, onSave }) {
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
                 {isValidAddress ? (
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : form.line1 ? (
+                ) : line1Value ? (
                   <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
                 ) : null}
               </div>
             </div>
-            {!isValidAddress && form.line1?.length > 3 && (
+            {!isValidAddress && line1Value?.length > 3 && (
               <p className="text-xs text-[#b88a2f] mt-1.5 flex items-center gap-1 italic">
                 <AlertCircle className="w-3 h-3 flex-shrink-0" />
                 Select from suggestions for accurate delivery
@@ -468,7 +488,7 @@ export default function Checkout() {
   const selectedAddress = addresses.find((a) => a.id === selectedAddr);
 
   return (
-    <div className="min-h-screen bg-cream-100 luxury-grain pt-32 pb-24 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-cream-100 luxury-grain pt-28 sm:pt-32 pb-20 sm:pb-24 px-3 sm:px-4 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-125 h-125 bg-brand-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
       <div className="absolute bottom-0 left-0 w-100 h-100 bg-brand-secondary/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4" />
@@ -498,7 +518,7 @@ export default function Checkout() {
         </div>
 
         {/* Step Progress Indicator */}
-        <div className="mb-12 p-6 card flex items-center justify-between">
+        <div className="mb-8 sm:mb-12 p-3 sm:p-6 card flex items-center justify-between">
           {STEPS.map((s, i) => (
             <div key={s.id} className="flex items-center flex-1">
               <div className="flex items-center gap-2">
@@ -511,7 +531,7 @@ export default function Checkout() {
                 }`}>
                   {step > s.id ? <Check className="w-4 h-4" /> : s.id}
                 </div>
-                <span className="font-bold text-[10px] sm:text-sm text-gray-700 hidden xs:inline uppercase tracking-widest">{s.label}</span>
+                <span className="font-bold text-[10px] sm:text-sm text-gray-700 hidden sm:inline uppercase tracking-widest">{s.label}</span>
               </div>
               {i < STEPS.length - 1 && (
                 <div className={`flex-1 h-0.5 mx-4 ${step > s.id ? 'bg-brand-secondary' : 'bg-cream-200'}`} />
@@ -527,7 +547,7 @@ export default function Checkout() {
           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
 
             {/* STEP 1 — Address */}
-            <div className={`card p-8 transition-all ${step >= 1 ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+            <div className={`card p-4 sm:p-6 md:p-8 transition-all ${step >= 1 ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
               <div className="flex items-center justify-between gap-4 pb-6 border-b border-cream-200 mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center">
@@ -561,7 +581,7 @@ export default function Checkout() {
                       {addresses.map((a) => (
                         <label
                           key={a.id}
-                          className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all group ${
+                          className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all group ${
                             selectedAddr === a.id
                               ? 'border-brand-secondary bg-linear-to-r from-brand-surface to-transparent shadow-md'
                               : 'border-cream-300 hover:border-brand-secondary hover:bg-cream-50'
@@ -583,10 +603,10 @@ export default function Checkout() {
                               )}
                             </div>
                             <p className="font-semibold text-gray-800 text-sm">{a.fullName}</p>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
                               {a.line1}{a.line2 ? `, ${a.line2}` : ''}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-xs sm:text-sm text-gray-600">
                               {a.city}, {a.state} – {a.pincode}
                             </p>
                             <p className="text-xs text-gray-500 mt-2 font-medium">{a.phone}</p>
@@ -604,7 +624,7 @@ export default function Checkout() {
                       {/* Add New Address Button */}
                       <button
                         onClick={() => setShowAddrModal(true)}
-                        className="w-full py-4 border-2 border-dashed border-cream-400 rounded-2xl text-sm font-bold text-brand-primary hover:border-brand-secondary hover:bg-brand-surface transition-all flex items-center justify-center gap-3 group mt-2"
+                        className="w-full py-3 sm:py-4 border-2 border-dashed border-cream-400 rounded-2xl text-xs sm:text-sm font-bold text-brand-primary hover:border-brand-secondary hover:bg-brand-surface transition-all flex items-center justify-center gap-2 sm:gap-3 group mt-2"
                       >
                         <div className="w-5 h-5 rounded-full border-2 border-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all flex items-center justify-center">
                           <Plus className="w-3 h-3" />
@@ -631,16 +651,16 @@ export default function Checkout() {
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-3 rounded-2xl border-2 border-cream-200 focus:border-brand-secondary focus:outline-none transition-colors resize-none placeholder-gray-400"
-                      placeholder="Add any special instructions or delivery notes (e.g., please ring doorbell twice, leave with security guard, etc.)"
+                      className="w-full px-3 sm:px-4 py-3 rounded-2xl border-2 border-cream-200 focus:border-brand-secondary focus:outline-none transition-colors resize-none placeholder-gray-400 text-sm"
+                      placeholder="Add any special instructions or delivery notes (e.g., ring doorbell twice, leave with security guard)"
                     />
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-2 sm:gap-3 pt-4">
                     <button
                       onClick={() => navigate('/cart')}
-                      className="flex-1 px-6 py-4 rounded-2xl border-2 border-cream-300 text-gray-700 font-bold hover:bg-cream-50 transition-colors"
+                      className="flex-1 px-3 sm:px-6 py-3 sm:py-4 rounded-2xl border-2 border-cream-300 text-gray-700 font-bold text-sm sm:text-base hover:bg-cream-50 transition-colors"
                     >
                       Back to Cart
                     </button>
@@ -649,7 +669,7 @@ export default function Checkout() {
                         if (!selectedAddr) { toast.error('Please select a delivery address'); return; }
                         setStep(2);
                       }}
-                      className="flex-1 px-6 py-4 rounded-2xl bg-brand-primary text-white font-bold hover:bg-brand-secondary transition-colors shadow-md"
+                      className="flex-1 px-3 sm:px-6 py-3 sm:py-4 rounded-2xl bg-brand-primary text-white font-bold text-sm sm:text-base hover:bg-brand-secondary transition-colors shadow-md"
                     >
                       Review Order
                     </button>
@@ -658,9 +678,9 @@ export default function Checkout() {
               )}
 
               {step > 1 && selectedAddress && (
-                <div className="p-4 bg-brand-surface rounded-2xl">
-                  <p className="text-sm font-semibold text-gray-900">{selectedAddress.label} — {selectedAddress.fullName}</p>
-                  <p className="text-sm text-gray-600">
+                <div className="p-3 sm:p-4 bg-brand-surface rounded-2xl">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900">{selectedAddress.label} — {selectedAddress.fullName}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">
                     {selectedAddress.line1}{selectedAddress.line2 ? `, ${selectedAddress.line2}` : ''}, {selectedAddress.city}, {selectedAddress.state} – {selectedAddress.pincode}
                   </p>
                 </div>
@@ -669,7 +689,7 @@ export default function Checkout() {
 
             {/* STEP 2 — Review */}
             {step >= 2 && (
-              <div className="card p-8">
+              <div className="card p-4 sm:p-6 md:p-8">
                 <div className="flex items-center justify-between gap-4 pb-6 border-b border-cream-200 mb-6">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center">
@@ -736,7 +756,7 @@ export default function Checkout() {
 
             {/* STEP 3 — Payment */}
             {step >= 3 && (
-              <div className="card p-8">
+              <div className="card p-4 sm:p-6 md:p-8">
                 <div className="flex items-center gap-4 pb-6 border-b border-cream-200 mb-8">
                   <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center">
                     <CreditCard className="w-5 h-5 text-brand-primary" />
@@ -830,7 +850,7 @@ export default function Checkout() {
                     <button
                       onClick={() => handleCreateOrder(selectedMethod)}
                       disabled={!selectedMethod || placing}
-                      className={`group relative w-full py-5 rounded-2xl font-bold text-sm uppercase tracking-[0.2em] shadow-xl transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden
+                      className={`group relative w-full py-4 sm:py-5 rounded-2xl font-bold text-xs sm:text-sm uppercase tracking-[0.15em] sm:tracking-[0.2em] shadow-xl transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 overflow-hidden
                         ${!selectedMethod 
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' 
                           : 'bg-[#5a3f2f] text-white hover:bg-[#3b2a1f] shadow-[#5a3f2f]/20'}
