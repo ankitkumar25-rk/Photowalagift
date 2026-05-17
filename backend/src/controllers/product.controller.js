@@ -26,6 +26,7 @@ const productSchema = z.object({
   isActive:      z.coerce.boolean().default(true),
   tags:          z.preprocess((val) => (typeof val === 'string' ? val.split(',').map(s => s.trim()).filter(Boolean) : val), z.array(z.string())).default([]),
   certifications: z.preprocess((val) => (typeof val === 'string' ? val.split(',').map(s => s.trim()).filter(Boolean) : val), z.array(z.string())).default([]),
+  weight:        z.preprocess((val) => (val === '' || val === undefined || val === null ? null : Number(val)), z.number().nullable().optional()),
   nutritionInfo: z.any().optional(),
   images: z.array(z.object({
     url: imageUrlSchema,

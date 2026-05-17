@@ -19,6 +19,7 @@ const EMPTY_FORM = {
   isFeatured: false,
   tags: '',
   certifications: '',
+  weight: '',
 };
 
 function toArray(input) {
@@ -85,6 +86,7 @@ export default function AdminProductForm() {
       isFeatured: Boolean(productData.isFeatured),
       tags: Array.isArray(productData.tags) ? productData.tags.join(', ') : '',
       certifications: Array.isArray(productData.certifications) ? productData.certifications.join(', ') : '',
+      weight: productData.weight?.toString() || '',
     });
 
     const existingImages = productData.images || [];
@@ -231,22 +233,39 @@ export default function AdminProductForm() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-[#7a655c] mb-2">SKU / Unit</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="SKU"
-                    className="input-field bg-[#fcf9f6] flex-1"
-                    value={form.sku}
-                    onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Unit (kg/pc)"
-                    className="input-field bg-[#fcf9f6] w-24"
-                    value={form.unit}
-                    onChange={(e) => setForm((prev) => ({ ...prev, unit: e.target.value }))}
-                  />
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#7a655c] mb-2">Product Identifiers & Specifications</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">SKU</span>
+                    <input
+                      type="text"
+                      placeholder="SKU Code"
+                      className="input-field bg-[#fcf9f6]"
+                      value={form.sku}
+                      onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Size (e.g. 10-15 inch, pc)</span>
+                    <input
+                      type="text"
+                      placeholder="Size / Unit"
+                      className="input-field bg-[#fcf9f6]"
+                      value={form.unit}
+                      onChange={(e) => setForm((prev) => ({ ...prev, unit: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Weight (grams)</span>
+                    <input
+                      type="number"
+                      step="0.001"
+                      placeholder="Weight (g)"
+                      className="input-field bg-[#fcf9f6]"
+                      value={form.weight}
+                      onChange={(e) => setForm((prev) => ({ ...prev, weight: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

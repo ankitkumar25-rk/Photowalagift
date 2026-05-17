@@ -639,22 +639,14 @@ export default function ProductDetail() {
 
             {/* Tags + certifications */}
             {(product.tags?.length > 0 || product.certifications?.length > 0) && (
-              <div className="space-y-2 pt-2">
+              <div className="space-y-3 pt-2">
                 {product.tags?.length > 0 && (
-                  <div className="relative max-h-20 sm:max-h-28 overflow-hidden">
-                    <div className="flex flex-wrap gap-1.5">
-                      {product.tags.slice(0, 12).map((t) => (
-                        <span key={t} className="px-2.5 py-1 bg-cream-200 text-gray-600 text-xs font-semibold rounded-full">
-                          #{t}
-                        </span>
-                      ))}
-                      {product.tags.length > 12 && (
-                        <span className="px-2.5 py-1 bg-cream-100 text-gray-400 text-xs font-semibold rounded-full">
-                          +{product.tags.length - 12} more
-                        </span>
-                      )}
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                  <div className="bg-[#fdfbf7] border border-[#f3ebdf] p-4 rounded-2xl flex flex-wrap gap-2">
+                    {product.tags.map((t) => (
+                      <span key={t} className="px-2.5 py-1 bg-cream-200/60 hover:bg-cream-200 text-gray-600 text-xs font-semibold rounded-full transition-colors">
+                        #{t}
+                      </span>
+                    ))}
                   </div>
                 )}
                 {product.certifications?.length > 0 && (
