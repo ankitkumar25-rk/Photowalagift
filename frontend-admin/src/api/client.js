@@ -43,7 +43,7 @@ async function ensureCsrfCookie() {
   return csrfBootstrapPromise;
 }
 
-async function doRefresh() {
+export async function doTokenRefresh() {
   try {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) throw new Error('No refresh token');
@@ -127,7 +127,7 @@ api.interceptors.response.use(
 
       try {
         if (!refreshPromise) {
-          refreshPromise = doRefresh();
+          refreshPromise = doTokenRefresh();
         }
         await refreshPromise;
         

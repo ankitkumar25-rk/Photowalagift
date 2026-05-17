@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import passport from './config/passport.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
@@ -50,10 +51,10 @@ if (process.env.NODE_ENV === 'production') {
 // SECURITY MIDDLEWARE
 // ================================
 const allowedOrigins = [
-  process.env.CLIENT_URL?.replace(/\/$/, ''),
-  process.env.ADMIN_URL?.replace(/\/$/, ''),
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL,
   'http://localhost:5173',
-  'http://localhost:5174'
+  'http://localhost:5174',
 ].filter(Boolean);
 
 console.log('✔ Configuring CORS for origins:', allowedOrigins);
@@ -68,33 +69,21 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-const corsOptions = {
-  origin: function(origin, callback) {
-    const allowed = [
-      'https://photowalagift.online',
-      'https://www.photowalagift.online',
-      'https://admin.photowalagift.online',
-      'https://api.photowalagift.online',
-      'https://photowala-user.vercel.app',
-      'https://photowala-three.vercel.app',
-      'http://localhost:5173',
-      'http://localhost:5174',
-    ];
-    if (!origin || allowed.includes(origin)) {
+app.options('*', cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`✖ CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`CORS: origin ${origin} not allowed`));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'x-csrf-token', 'x-xsrf-token'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   exposedHeaders: ['set-cookie'],
-};
-
-app.options(/\/.*/, cors(corsOptions));
-app.use(cors(corsOptions));
+}));
 
 // ================================
 // PAYMENTS WEBHOOK (MUST BE BEFORE express.json)

@@ -26,8 +26,29 @@ const NAV = [
   { to: '/support',   icon: MessageSquare,   label: 'Support' },
 ];
 
+function SessionExpiredModal({ show }) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] bg-brand-deep/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-gray-100">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="text-3xl">⏳</span>
+        </div>
+        <h2 className="text-2xl font-display font-black text-brand-primary mb-2 tracking-tight">Session Ended</h2>
+        <p className="text-gray-500 font-medium mb-8">Your session has ended for security. Please sign in again.</p>
+        <button 
+          onClick={() => window.location.href = '/login'}
+          className="w-full btn-primary py-3"
+        >
+          Sign In
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminLayout() {
-  const { user, logout } = useAdminStore();
+  const { user, logout, sessionExpired } = useAdminStore();
   const { sidebarOpen, setSidebarOpen, toggleSidebar } = useUIStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,82 +60,11 @@ export default function AdminLayout() {
     setSidebarOpen(false);
   }, [location.pathname, setSidebarOpen]);
 
-  useEffect(() => {
-    let warningTimeout;
-    let logoutTimeout;
-
-    const startTimers = () => {
-      // 12 minutes warning
-      warningTimeout = setTimeout(() => {
-        toast.custom((t) => (
-          <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black/5 border border-gray-100 overflow-hidden`}>
-            <div className="flex-1 w-0 p-5">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 pt-0.5 text-2xl">⚠️</div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-bold text-gray-900 uppercase tracking-tight">Session Expiring</p>
-                  <p className="mt-1 text-xs font-medium text-gray-500 leading-relaxed">Your session will expire in 3 minutes for security. Would you like to stay logged in?</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex border-l border-gray-100">
-              <button
-                onClick={async () => {
-                  toast.dismiss(t.id);
-                  try {
-                    const refreshToken = localStorage.getItem('refreshToken');
-                    const res = await api.post('/auth/refresh', { refreshToken });
-                    const { accessToken, refreshToken: newRefreshToken } = res.data?.data || {};
-                    if (accessToken) {
-                      localStorage.setItem('token', accessToken);
-                      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
-                      resetTimers();
-                      toast.success('Session extended', { icon: '✨' });
-                    }
-                  } catch (err) {
-                    toast.error('Session expired');
-                    handleLogout();
-                  }
-                }}
-                className="w-full border border-transparent rounded-none rounded-r-2xl p-4 flex items-center justify-center text-[10px] font-black tracking-widest text-brand-primary hover:bg-brand-soft transition-colors focus:outline-none uppercase"
-              >
-                Stay In
-              </button>
-            </div>
-          </div>
-        ), { duration: 180000, position: 'bottom-right' });
-      }, 12 * 60 * 1000);
-
-      // 15 minutes hard logout
-      logoutTimeout = setTimeout(() => {
-        toast.error("You've been logged out for security. Please sign in again.", { 
-          duration: 10000,
-          style: { background: '#ef4444', color: '#fff', fontWeight: 'bold' }
-        });
-        handleLogout();
-      }, 15 * 60 * 1000);
-    };
-
-    const resetTimers = () => {
-      clearTimeout(warningTimeout);
-      clearTimeout(logoutTimeout);
-      startTimers();
-    };
-
-    if (user) {
-      startTimers();
-    }
-
-    return () => {
-      clearTimeout(warningTimeout);
-      clearTimeout(logoutTimeout);
-    };
-  }, [user]);
-
   const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
     <div className="min-h-screen bg-color-bg-main font-sans selection:bg-brand-secondary selection:text-white">
+      <SessionExpiredModal show={sessionExpired} />
       {/* Sidebar */}
       <aside 
         className={`fixed inset-y-0 left-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] glass-sidebar overflow-hidden

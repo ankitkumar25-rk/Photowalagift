@@ -4,7 +4,12 @@ import { Toaster } from 'react-hot-toast';
 import { lazy, Suspense, useEffect } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import api from './api/client';
+import toast from 'react-hot-toast';
+import api, { doTokenRefresh } from './api/client';
+
+const SESSION_DURATION = 60 * 60 * 1000;   // 1 hour
+const REFRESH_INTERVAL = 13 * 60 * 1000;   // 13 minutes
+const WARN_AT = 55 * 60 * 1000;             // warn at 55 minutes
 
 // ── Auth Store ───────────────────────────────────────────────
 // eslint-disable-next-line react-refresh/only-export-components
@@ -15,7 +20,9 @@ export const useAdminStore = create(
       user: null,
       isFetching: false,
       isInitialized: false, // Added to track if initial auth check is done
+      sessionExpired: false,
       
+      setSessionExpired: (val) => set({ sessionExpired: val }),
       setUser: (user) => set({ user }),
       logout: () => { 
         set({ user: null, isInitialized: true }); 
@@ -44,8 +51,12 @@ export const useAdminStore = create(
             set({ user: userData, isFetching: false, isInitialized: true });
             return userData;
           } catch (err) {
+            console.error('Initial auth check failed:', err.message || err);
             set({ user: null, isFetching: false, isInitialized: true });
-            throw err;
+            // Only redirect to login if not already there
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
           } finally {
             adminFetchMePromise = null;
           }
@@ -127,32 +138,58 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Proactive silent refresh every 13 minutes
+    let lastActivity = Date.now();
+    let toastId = null;
+
     const refreshSilently = async () => {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) return;
       try {
-        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
-        const res = await api.post('/auth/refresh', { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = res.data?.data || {};
-        if (accessToken) {
-          localStorage.setItem('token', accessToken);
-          if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
-        }
+        await doTokenRefresh();
       } catch (err) {
         console.error('Silent refresh failed:', err);
       }
     };
 
-    const interval = setInterval(refreshSilently, 13 * 60 * 1000);
-    
+    // Initial silent refresh timer
+    const refreshInterval = setInterval(refreshSilently, REFRESH_INTERVAL);
+
+    const updateActivity = () => {
+      lastActivity = Date.now();
+    };
+
+    // Track user activity
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('click', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('scroll', updateActivity);
+
+    const checkInactivity = setInterval(() => {
+      const inactiveTime = Date.now() - lastActivity;
+
+      if (inactiveTime >= SESSION_DURATION) {
+        // Session expired
+        useAdminStore.getState().logout();
+        useAdminStore.getState().setSessionExpired(true);
+      } else if (inactiveTime >= WARN_AT) {
+        // Warn
+        if (!toastId) {
+          toastId = toast.error("Your session expires in 5 minutes. Click anywhere to stay logged in", { duration: 300000 });
+        }
+      } else {
+        // Active
+        if (toastId) {
+          toast.dismiss(toastId);
+          toastId = null;
+        }
+      }
+    }, 60 * 1000); // Check every minute
+
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
+      if (!document.hidden) {
         const token = localStorage.getItem('token');
-        const user = useAdminStore.getState().user;
-        // Only fetch if we have a token but no user (lost state)
-        if (token && !user) {
-          useAdminStore.getState().fetchMe().catch(() => {});
+        if (!token) {
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
       }
     };
@@ -160,7 +197,12 @@ export default function App() {
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(refreshInterval);
+      clearInterval(checkInactivity);
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('click', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('scroll', updateActivity);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);

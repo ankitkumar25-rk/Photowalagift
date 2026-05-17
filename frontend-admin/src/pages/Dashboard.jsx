@@ -164,9 +164,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="h-[300px] w-full">
+          <div className="h-[300px] w-full min-w-0 min-h-[300px]">
             {salesData && salesData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={salesData}>
                   <defs>
                     <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -203,9 +203,9 @@ export default function Dashboard() {
 
         <div className="card p-8">
           <h3 className="text-lg font-bold text-brand-primary mb-8">Operational Split</h3>
-          <div className="h-[300px] w-full">
+          <div className="h-[300px] w-full min-w-0 min-h-[300px]">
             {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={65} paddingAngle={5}>
                     {pieData.map((entry) => (
