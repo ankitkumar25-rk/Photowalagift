@@ -130,13 +130,7 @@ function OrderCard({ order, onPay }) {
 
             <div className="space-y-1">
               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Total Value</p>
-              {Number(order.totalAmount) > 0 ? (
-                <p className="text-2xl font-bold text-brand-primary leading-none">₹{Number(order.totalAmount).toLocaleString('en-IN')}</p>
-              ) : (
-                <span className="inline-flex items-center rounded-xl bg-amber-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 border border-amber-200 shadow-xs">
-                  price not set yet, NOT PAYMENT !!
-                </span>
-              )}
+              <p className="text-2xl font-bold text-brand-primary leading-none">₹{Number(order.totalAmount).toLocaleString('en-IN')}</p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -151,7 +145,7 @@ function OrderCard({ order, onPay }) {
               >
                 <ChevronDown className="w-5 h-5" />
               </button>
-              {order.paymentStatus !== 'PAID' && Number(order.totalAmount) > 0 && (
+              {order.paymentStatus !== 'PAID' && (
                 <button
                   onClick={() => onPay(order)}
                   className="bg-brand-primary text-white px-6 py-2.5 rounded-pill text-[10px] font-bold uppercase tracking-widest shadow-lg hover:shadow-brand-primary/20 hover:scale-105 active:scale-95 transition-all"
