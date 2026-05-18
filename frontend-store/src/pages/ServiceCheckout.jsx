@@ -79,7 +79,15 @@ export default function ServiceCheckout() {
         },
         theme: { color: '#5b3f2f' },
         modal: {
-          ondismiss: () => setLoading(null)
+          ondismiss: async () => {
+            try {
+              await api.delete(`/service-orders/${orderData.orderId}`);
+            } catch (e) {
+              /* ignore */
+            }
+            setLoading(null);
+            toast.error('Payment cancelled.');
+          }
         }
       };
 
@@ -94,7 +102,7 @@ export default function ServiceCheckout() {
 
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['serviceOrders'] });
-    navigate('/account/services');
+    navigate(`/services/confirmation/${orderData.orderId}`);
   };
 
   return (

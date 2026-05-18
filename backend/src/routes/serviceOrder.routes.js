@@ -10,6 +10,7 @@ const isAdmin = authorize('ADMIN', 'SUPER_ADMIN');
 router.post('/',                authenticate, serviceOrderController.createServiceOrder);
 router.get('/my',               authenticate, serviceOrderController.getMyServiceOrders);
 router.get('/:id',              authenticate, serviceOrderController.getServiceOrderDetail);
+router.delete('/:id',           authenticate, serviceOrderController.cancelServiceOrder);
 
 // Admin routes
 router.get('/admin/all',        authenticate, isAdmin, serviceOrderController.getAllServiceOrders);

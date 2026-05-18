@@ -11,6 +11,14 @@ import toast from 'react-hot-toast';
 import PaymentModal from '../../components/PaymentModal';
 
 const STATUS_FLOW = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+const STATUS_LABELS = {
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  PROCESSING: 'In Production',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Completed',
+  CANCELLED: 'Cancelled'
+};
 
 export default function ServiceOrderDetail() {
   const { id } = useParams();
@@ -92,8 +100,8 @@ export default function ServiceOrderDetail() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${order.category === 'MACHINE' ? 'bg-orange-100 text-brand-accent' : 'bg-brand-surface text-brand-primary'}`}>
-                    {order.category} SERVICE
+                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-800 border border-amber-200 shadow-xs">
+                    Service Order ({order.category})
                   </span>
                   <span className="text-gray-300">|</span>
                   <span className="text-sm font-bold text-gray-500">Order #{order.orderNumber}</span>
@@ -106,7 +114,11 @@ export default function ServiceOrderDetail() {
                   onChange={(e) => updateStatusMutation.mutate(e.target.value)}
                   className="rounded-xl border-gray-200 text-sm font-bold focus:border-brand-primary focus:ring-brand-primary/20 bg-gray-50 px-4 py-2"
                 >
-                  {STATUS_FLOW.map(s => <option key={s} value={s}>{s}</option>)}
+                  {STATUS_FLOW.map(s => (
+                    <option key={s} value={s}>
+                      {STATUS_LABELS[s] || s}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -143,6 +155,16 @@ export default function ServiceOrderDetail() {
                   {order.paymentStatus || 'PENDING'} 
                   {order.paymentMethod && <span className="text-xs text-gray-400 font-bold ml-2">via {order.paymentMethod}</span>}
                 </h3>
+                {order.razorpayPaymentId && (
+                  <p className="text-xs font-bold text-brand-primary/60 mt-1 uppercase tracking-wider">
+                    Payment ID: <span className="font-mono font-black text-[#5b3f2f]">{order.razorpayPaymentId}</span>
+                  </p>
+                )}
+                {order.razorpayOrderId && (
+                  <p className="text-[10px] font-bold text-gray-400 mt-0.5 uppercase tracking-widest">
+                    Razorpay Order ID: <span className="font-mono">{order.razorpayOrderId}</span>
+                  </p>
+                )}
               </div>
             </div>
             {order.paymentStatus !== 'PAID' && (
@@ -293,7 +315,7 @@ export default function ServiceOrderDetail() {
                     </div>
                     <div>
                       <p className={`text-xs font-bold uppercase tracking-widest ${isCurrent ? 'text-white' : isCompleted ? 'text-white/60' : 'text-white/20'}`}>
-                        {s}
+                        {STATUS_LABELS[s] || s}
                       </p>
                       {isCurrent && <p className="text-[10px] text-brand-secondary font-bold uppercase mt-1">Active Stage</p>}
                     </div>

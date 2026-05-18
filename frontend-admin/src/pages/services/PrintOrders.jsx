@@ -18,6 +18,15 @@ const STATUS_COLORS = {
   CANCELLED: 'bg-red-100 text-red-700 border-red-200',
 };
 
+const STATUS_LABELS = {
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  PROCESSING: 'In Production',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Completed',
+  CANCELLED: 'Cancelled'
+};
+
 export default function PrintOrders() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -149,7 +158,7 @@ export default function PrintOrders() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
-                        {order.status}
+                        {STATUS_LABELS[order.status] || order.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">

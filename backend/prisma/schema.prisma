@@ -131,6 +131,8 @@ model ServiceOrder {
   specialRemark   String?
   customerName    String?         // The "Order Name" field from forms
   trackingNumber  String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
   
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt

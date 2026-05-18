@@ -197,3 +197,28 @@ export const deleteServiceOrder = asyncHandler(async (req, res) => {
   });
   res.json({ success: true, message: 'Service order deleted' });
 });
+
+/**
+ * Customer: Cancel pending service order (Only if unpaid/pending payment)
+ */
+export const cancelServiceOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const order = await prisma.serviceOrder.findFirst({
+    where: { 
+      id, 
+      userId: req.user.id,
+      paymentStatus: 'PENDING'
+    }
+  });
+
+  if (!order) {
+    throw createError('Service order not found or already processed', 404);
+  }
+
+  await prisma.serviceOrder.delete({
+    where: { id }
+  });
+
+  res.json({ success: true, message: 'Pending service order cancelled' });
+});
+

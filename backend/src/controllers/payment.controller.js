@@ -6,6 +6,7 @@ import { sendEmail, emailTemplates } from '../config/email.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import valkey from '../lib/valkey.js';
 import { saveOrderToDB } from '../services/orderService.js';
+import { broadcastToAdmins } from '../services/notificationService.js';
 
 // Startup validation logs
 console.log('[Razorpay] key_id loaded:', !!process.env.RAZORPAY_KEY_ID);
@@ -20,7 +21,69 @@ export const createRazorpayOrder = asyncHandler(async (req, res, next) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { currency = 'INR', addressId, notes: orderNotes, idempotencyKey } = req.body;
+    const { orderType, amount, currency = 'INR', orderId } = req.body;
+
+    if (orderType === 'SERVICE_ORDER' || orderType === 'SERVICE') {
+      if (!orderId) {
+        return res.status(400).json({ message: 'orderId is required for service payments' });
+      }
+
+      const dbRecord = await prisma.serviceOrder.findFirst({
+        where: { id: orderId, userId: req.user.id }
+      });
+
+      if (!dbRecord) {
+        return res.status(404).json({ message: 'Service order not found' });
+      }
+
+      const amountInPaise = Math.round(Number(amount || dbRecord.totalAmount) * 100);
+      if (!amountInPaise || amountInPaise < 100) {
+        return res.status(400).json({ message: 'Invalid amount. Minimum ₹1.' });
+      }
+
+      const options = {
+        amount: amountInPaise,
+        currency,
+        receipt: `service_${orderId.slice(0, 8)}`,
+        notes: {
+          orderType: 'SERVICE_ORDER',
+          internalOrderId: orderId,
+          userId: req.user.id,
+        }
+      };
+
+      let rzpOrder;
+      try {
+        rzpOrder = await razorpay.orders.create(options);
+      } catch (razorpayError) {
+        console.error('[Razorpay Order Error for Service]', JSON.stringify(razorpayError));
+        return res.status(502).json({
+          success: false,
+          message: 'Payment gateway error',
+          detail: razorpayError?.error?.description || razorpayError?.message || 'Unknown Razorpay error'
+        });
+      }
+
+      // Save the razorpayOrderId to the ServiceOrder
+      await prisma.serviceOrder.update({
+        where: { id: orderId },
+        data: {
+          razorpayOrderId: rzpOrder.id
+        }
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          razorpayOrderId: rzpOrder.id,
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency,
+          keyId: process.env.RAZORPAY_KEY_ID,
+        },
+      });
+    }
+
+    const { addressId, notes: orderNotes, idempotencyKey } = req.body;
 
     if (!addressId || !idempotencyKey) {
       return res.status(400).json({ message: 'addressId and idempotencyKey are required' });
@@ -100,8 +163,82 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
       razorpay_signature, 
       addressId,
       notes,
-      idempotencyKey
+      idempotencyKey,
+      orderId: serviceOrderId,
+      orderType
     } = req.body;
+
+    if (orderType === 'SERVICE_ORDER' || orderType === 'SERVICE') {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !serviceOrderId) {
+        throw createError('Missing required payment verification fields', 400);
+      }
+
+      // 1. Signature Verification
+      const body = razorpay_order_id + '|' + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(body)
+        .digest('hex');
+
+      if (expectedSignature !== razorpay_signature) {
+        throw createError('Payment verification failed', 400);
+      }
+
+      // 2. Update the ServiceOrder model
+      const updatedServiceOrder = await prisma.serviceOrder.update({
+        where: { id: serviceOrderId },
+        data: {
+          status: 'CONFIRMED',
+          paymentStatus: 'PAID',
+          paymentMethod: 'RAZORPAY',
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+        }
+      });
+
+      // 3. Broadcast SSE notification to admin
+      try {
+        broadcastToAdmins('new_order', {
+          id: serviceOrderId,
+          orderNumber: updatedServiceOrder.orderNumber,
+          customerName: req.user?.name || 'Customer',
+          customerEmail: req.user?.email,
+          amount: updatedServiceOrder.totalAmount,
+          type: 'SERVICE_ORDER',
+          createdAt: new Date().toISOString(),
+        });
+      } catch (broadcastErr) {
+        console.error('[verifyPayment] Admin broadcast failed:', broadcastErr);
+      }
+
+      // 4. Create Payment Record (if not exists)
+      const existingPayment = await prisma.payment.findUnique({
+        where: { razorpayPaymentId: razorpay_payment_id }
+      });
+      
+      if (!existingPayment) {
+        await prisma.payment.create({
+          data: {
+            userId: req.user.id,
+            internalOrderId: serviceOrderId,
+            orderType: 'SERVICE_ORDER',
+            razorpayOrderId: razorpay_order_id,
+            razorpayPaymentId: razorpay_payment_id,
+            amount: Math.round(Number(updatedServiceOrder.totalAmount) * 100),
+            status: 'PAID',
+            paymentMethod: 'RAZORPAY',
+            paidAt: new Date(),
+          }
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment verified successfully',
+        order: updatedServiceOrder,
+        orderType: 'SERVICE_ORDER',
+      });
+    }
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !idempotencyKey) {
       throw createError('Missing required payment verification fields', 400);

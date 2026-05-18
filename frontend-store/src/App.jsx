@@ -46,6 +46,7 @@ const LaserMarkingService = lazy(() => import('./pages/services/MachineServices/
 const CNCRouterService = lazy(() => import('./pages/services/MachineServices/CNCRouterService'));
 const MyServiceOrders = lazy(() => import('./pages/MyServiceOrders'));
 const ServiceCheckout = lazy(() => import('./pages/ServiceCheckout'));
+const ServiceConfirmation = lazy(() => import('./pages/ServiceConfirmation'));
 const ComingSoon      = lazy(() => import('./pages/ComingSoon'));
 const BulkOrders    = lazy(() => import('./pages/BulkOrders'));
 const NotFound      = lazy(() => import('./pages/NotFound'));
@@ -132,6 +133,7 @@ export default function App() {
                 {/* Protected Routes */}
                 <Route path="checkout"  element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                 <Route path="checkout/service" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
+                <Route path="services/confirmation/:serviceOrderId" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
                 <Route path="orders"    element={<ProtectedRoute><Orders /></ProtectedRoute>} />
                 <Route path="orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
                 <Route path="orders/:orderId/success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
