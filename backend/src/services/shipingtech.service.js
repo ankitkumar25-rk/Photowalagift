@@ -2,6 +2,8 @@ import axios from 'axios';
 
 const BASE_URL = process.env.SHIPINGTECH_BASE_URL;
 const API_KEY = process.env.SHIPINGTECH_API_KEY;
+const CLIENT_URL = process.env.CLIENT_URL || 'https://photowalagift.online';
+const requestOrigin = CLIENT_URL.replace(/\/$/, '');
 
 let cachedToken = null;
 let tokenExpiry = null;
@@ -11,6 +13,8 @@ const shipClient = axios.create({
   headers: {
     'x-api-key': API_KEY,
     'Content-Type': 'application/json',
+    'Origin': requestOrigin,
+    'Referer': requestOrigin + '/',
   },
 });
 
@@ -30,7 +34,13 @@ export const getToken = async () => {
         username: process.env.SHIPINGTECH_USERNAME,
         password: process.env.SHIPINGTECH_PASSWORD,
       },
-      { headers: { 'x-api-key': API_KEY } }
+      { 
+        headers: { 
+          'x-api-key': API_KEY,
+          'Origin': requestOrigin,
+          'Referer': requestOrigin + '/',
+        } 
+      }
     );
 
     cachedToken = data?.accessToken || data?.token || null;

@@ -28,19 +28,18 @@ const SHARED_FOOTER = `
   </div>
 `;
 
-/**
- * Send a transactional email
- */
 export async function sendEmail({ to, subject, html, text }) {
   if (!resend) {
     console.warn('[email] Skipping sendEmail: RESEND_API_KEY is not configured');
     return { skipped: true };
   }
 
+  const recipientList = Array.isArray(to) ? to : [to];
+
   try {
     const { data, error } = await resend.emails.send({
       from: FROM,
-      to: Array.isArray(to) ? to : [to],
+      to: recipientList,
       subject,
       html,
       text,
@@ -48,6 +47,38 @@ export async function sendEmail({ to, subject, html, text }) {
     if (error) throw error;
     return data;
   } catch (err) {
+    const isSandboxError =
+      err.statusCode === 403 ||
+      err.name === 'validation_error' ||
+      String(err.message || '').includes('only send testing emails') ||
+      String(err.message || '').includes('verify a domain');
+
+    if (isSandboxError) {
+      console.warn('\n======================================================================');
+      console.warn('⚠️  [Resend Sandbox Limitation]');
+      console.warn('The registered Resend account is in sandbox mode. Email was not delivered.');
+      console.warn(`Recipient: ${recipientList.join(', ')}`);
+      console.warn(`Subject:   ${subject}`);
+      
+      // Extract links for easy copy-pasting/clicking in dev terminal
+      const links = [];
+      if (html) {
+        const hrefRegex = /href="([^"]+)"/g;
+        let match;
+        while ((match = hrefRegex.exec(html)) !== null) {
+          links.push(match[1]);
+        }
+      }
+      if (links.length > 0) {
+        console.warn('Extracted Action Links:');
+        links.forEach((link, idx) => console.warn(`  [${idx + 1}] ${link}`));
+      }
+      console.warn('======================================================================\n');
+
+      // Return a simulated success payload so the calling routes don't crash
+      return { simulated: true, id: 'simulated_resend_sandbox_id' };
+    }
+
     console.error('Email send error:', err);
     throw err;
   }
