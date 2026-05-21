@@ -81,7 +81,12 @@ export default function ShippingPanel({ order, onRefresh }) {
     mutationFn: () => api.get('/shipping/health'),
     onSuccess: (res) => {
       const ok = res?.data?.success;
-      toast.success(ok ? 'ShipingTech OK' : 'ShipingTech error');
+      if (ok) {
+        toast.success('ShipingTech OK');
+      } else {
+        const errMsg = res?.data?.message || 'Check credentials';
+        toast.error(`ShipingTech error: ${errMsg}`);
+      }
     },
     onError: (err) => toast.error(err?.response?.data?.message || 'ShipingTech check failed'),
   });

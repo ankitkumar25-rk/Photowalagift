@@ -37,12 +37,22 @@ export const getShippingRates = async (req, res) => {
 
 export const shippingHealth = async (req, res) => {
   try {
+    console.log('[Shipping] Initiating ShipingTech integration health check...');
     const token = await ShipingTech.getToken();
     const ok = Boolean(token);
+    console.log('[Shipping] Health check result:', ok ? 'SUCCESS' : 'FAILED');
     return res.status(200).json({ success: ok, status: ok ? 'ok' : 'error' });
   } catch (err) {
-    console.error('[Shipping] health error:', err.message);
-    return res.status(200).json({ success: false, status: 'error' });
+    console.error('[Shipping] Health check encountered error:', err.message);
+    if (err.response) {
+      console.error('[Shipping] API Response Error Data:', JSON.stringify(err.response.data, null, 2));
+    }
+    return res.status(200).json({ 
+      success: false, 
+      status: 'error', 
+      message: err.message, 
+      details: err.response?.data || null 
+    });
   }
 };
 
