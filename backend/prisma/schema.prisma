@@ -308,6 +308,16 @@ model Order {
   total           Decimal       @db.Decimal(10, 2)
   notes           String?
   trackingNumber  String?
+  shipingTechUUID String?
+  awbNumber       String?
+  courierName     String?
+  courierService  String?
+  shippingCharge  Float?
+  pickupScheduled Boolean     @default(false)
+  pickupDate      DateTime?
+  shippingStatus  String?
+  packingSlipUrl  String?
+  warehouseId     String?
   paymentMethod   PaymentMethod?
   paymentStatus   PaymentStatus @default(PENDING)
   returns         Return[]

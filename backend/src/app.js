@@ -28,6 +28,7 @@ import returnsRoutes from './routes/returns.routes.js';
 import supportRoutes from './routes/support.routes.js';
 import serviceOrderRoutes from './routes/serviceOrder.routes.js';
 import notificationRoutes from './api/notifications/routes.js';
+import shippingRoutes from './api/shipping/routes.js';
 
 
 import * as paymentController from './controllers/payment.controller.js';
@@ -258,6 +259,7 @@ app.use('/api/returns', returnsRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/service-orders', serviceOrderRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/shipping', shippingRoutes);
 
 
 app.use((req, res) => {

@@ -6,7 +6,15 @@ import { ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PaginationControls from '../components/PaginationControls';
 
-const STATUSES = ['PENDING','CONFIRMED','PROCESSING','SHIPPED','DELIVERED','CANCELLED','REFUNDED'];
+const STATUSES = [
+  'PENDING',
+  'CONFIRMED',
+  'PROCESSING',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELLED',
+  'REFUNDED',
+];
 
 export default function AdminOrders() {
   const [status, setStatus] = useState('');

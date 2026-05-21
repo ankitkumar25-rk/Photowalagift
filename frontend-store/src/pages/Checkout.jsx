@@ -647,6 +647,7 @@ export default function Checkout() {
                     </div>
                   )}
 
+
                   {/* Divider */}
                   <div className="flex items-center gap-4 py-2">
                     <div className="flex-1 h-0.5 bg-linear-to-r from-cream-300 to-transparent" />

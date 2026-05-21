@@ -3,8 +3,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../api/client';
+import ShippingPanel from '../components/orders/ShippingPanel';
 
-const STATUSES = ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
+const STATUSES = [
+  'CONFIRMED',
+  'PROCESSING',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELLED',
+  'REFUNDED',
+];
 
 export default function AdminOrderDetail() {
   const { id } = useParams();
@@ -40,6 +48,7 @@ export default function AdminOrderDetail() {
     },
     onError: (err) => toast.error(err?.response?.data?.message || 'Unable to update tracking'),
   });
+
 
   if (error) return <div className="card p-5 bg-red-50 border border-red-200"><p className="text-red-700 font-semibold">Failed to load order: {error.message}</p></div>;
   if (isLoading) return <div className="card p-5">Loading order details...</div>;
@@ -130,7 +139,7 @@ export default function AdminOrderDetail() {
                <div className="text-sm text-[#5b3f2f] leading-7 bg-[#fcf9f6] p-5 rounded-2xl border border-[#5b3f2f]/5">
                  <p className="font-bold text-base mb-1">{order.address.fullName}</p>
                  <p className="opacity-80 font-medium">{[order.address.line1, order.address.line2].filter(Boolean).join(', ')}</p>
-                 <p className="opacity-80 font-medium">{[order.address.city, order.address.state, order.address.postalCode].filter(Boolean).join(', ')}</p>
+                 <p className="opacity-80 font-medium">{[order.address.city, order.address.state, order.address.pincode].filter(Boolean).join(', ')}</p>
                  <p className="text-[10px] font-black uppercase tracking-widest mt-2 text-[#b88a2f]">{order.address.country || 'India'}</p>
                </div>
              ) : <p className="text-sm text-gray-500 italic">No destination set.</p>}
@@ -218,6 +227,14 @@ export default function AdminOrderDetail() {
               </div>
             </div>
           </div>
+
+          <ShippingPanel
+            order={order}
+            onRefresh={() => {
+              qc.invalidateQueries({ queryKey: ['admin-order', id] });
+              qc.invalidateQueries({ queryKey: ['admin-orders'] });
+            }}
+          />
         </div>
       </div>
     </div>

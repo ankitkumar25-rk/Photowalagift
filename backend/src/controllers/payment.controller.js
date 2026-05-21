@@ -7,6 +7,63 @@ import asyncHandler from '../utils/asyncHandler.js';
 import valkey from '../lib/valkey.js';
 import { saveOrderToDB } from '../services/orderService.js';
 import { broadcastToAdmins } from '../services/notificationService.js';
+import * as ShipingTech from '../services/shipingtech.service.js';
+
+async function autoCreateShipment(orderId) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: true,
+        address: true,
+        items: { include: { product: true } },
+      },
+    });
+
+    if (!order || !order.address || order.shipingTechUUID) return;
+
+    await ShipingTech.getToken();
+
+    const payload = {
+      booking_code: Number(process.env.SHIPINGTECH_BOOKING_CODE),
+      customerName: order.user?.name || order.address.fullName,
+      customerPhone: order.address.phone || order.user?.phone || '',
+      customerEmail: order.user?.email,
+      deliveryAddress: order.address.line1,
+      deliveryCity: order.address.city,
+      deliveryState: order.address.state,
+      deliveryPincode: order.address.pincode,
+      deliveryCountry: 'India',
+      invoiceValue: Number(order.total),
+      isCOD: order.paymentMethod === 'COD',
+      codAmount: order.paymentMethod === 'COD' ? Number(order.total) : 0,
+      items: order.items.map((item) => ({
+        name: item.product?.name || item.productName,
+        qty: item.quantity,
+        price: Number(item.price),
+      })),
+      weightKg: 1,
+      referenceId: order.id,
+    };
+
+    ShipingTech.createShipmentOrder(payload)
+      .then(async (result) => {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            shipingTechUUID: result?.uuid || result?.id || null,
+            shippingStatus: 'PENDING',
+          },
+        });
+        console.log('[Shipping] Shipment created:', result?.uuid || result?.id);
+      })
+      .catch((err) => {
+        console.error('[Shipping] Auto-create failed:', err.message);
+      });
+  } catch (err) {
+    console.error('[Shipping] Token warmup failed:', err.message);
+  }
+}
 
 // Startup validation logs
 console.log('[Razorpay] key_id loaded:', !!process.env.RAZORPAY_KEY_ID);
@@ -295,6 +352,8 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
       });
     }
 
+    await autoCreateShipment(order.id);
+
     res.json({
       success: true,
       message: 'Payment verified successfully',
@@ -489,6 +548,8 @@ export const razorpayWebhook = asyncHandler(async (req, res) => {
         }
       });
     }
+
+    await autoCreateShipment(order.id);
   } else if (eventType === 'payment.failed') {
     const razorpayOrderId = payload.payment?.entity?.order_id;
     if (razorpayOrderId) {

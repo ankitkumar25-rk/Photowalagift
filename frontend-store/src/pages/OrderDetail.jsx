@@ -17,6 +17,13 @@ const STATUSES = [
   { key: 'DELIVERED',  label: 'Delivered',      icon: CheckCircle, desc: 'Delivered successfully' },
 ];
 
+const SHIPPING_STEPS = [
+  { key: 'CONFIRMED', label: 'Order Confirmed' },
+  { key: 'PICKUP_SCHEDULED', label: 'Pickup Scheduled' },
+  { key: 'IN_TRANSIT', label: 'In Transit' },
+  { key: 'DELIVERED', label: 'Delivered' },
+];
+
 const STATUS_COLOR = {
   PENDING:    'bg-brand-secondary',
   CONFIRMED:  'bg-blue-500',
@@ -53,6 +60,7 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [awbCopied, setAwbCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -86,6 +94,12 @@ export default function OrderDetail() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const copyAwb = () => {
+    navigator.clipboard.writeText(order.awbNumber);
+    setAwbCopied(true);
+    setTimeout(() => setAwbCopied(false), 2000);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-cream-100 flex items-center justify-center">
@@ -106,6 +120,23 @@ export default function OrderDetail() {
   const formattedDate = new Date(order.createdAt).toLocaleDateString('en-IN', {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
   });
+
+  const getShippingStepIndex = () => {
+    const status = order.shippingStatus || 'CONFIRMED';
+    const map = {
+      CONFIRMED: 0,
+      PENDING: 0,
+      ASSIGNED: 1,
+      PICKUP_SCHEDULED: 1,
+      PICKED_UP: 2,
+      IN_TRANSIT: 2,
+      DELIVERED: 3,
+      RTO: 2,
+    };
+    return map[status] ?? 0;
+  };
+
+  const shippingStepIndex = getShippingStepIndex();
 
   return (
     <div className="min-h-screen bg-cream-100 luxury-grain pt-32 pb-24 px-4 relative overflow-hidden">
@@ -210,6 +241,61 @@ export default function OrderDetail() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {!isCancelled && (
+          <div className="card p-8 mt-8 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center">
+                <Truck className="w-5 h-5 text-brand-primary" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Shipping Status</h2>
+            </div>
+
+            <div className="flex justify-between">
+              {SHIPPING_STEPS.map((step, idx) => (
+                <div key={step.key} className="text-center flex-1">
+                  <div className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${idx <= shippingStepIndex ? 'bg-brand-secondary text-white' : 'bg-cream-200 text-gray-400'}`}>
+                    {idx + 1}
+                  </div>
+                  <p className="text-[10px] font-semibold text-gray-600 mt-2 uppercase tracking-wider">{step.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+              <div className="p-4 rounded-2xl border border-cream-200 bg-cream-50">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Courier</p>
+                <p className="font-semibold text-gray-900 mt-1">{order.courierName || 'Pending'}</p>
+                <p className="text-xs text-gray-500">{order.courierService || 'Service pending'}</p>
+              </div>
+              <div className="p-4 rounded-2xl border border-cream-200 bg-cream-50">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AWB Number</p>
+                <div className="flex items-center justify-between gap-2 mt-1">
+                  <p className="font-mono font-bold text-gray-900 truncate">{order.awbNumber || 'Pending'}</p>
+                  {order.awbNumber && (
+                    <button
+                      onClick={copyAwb}
+                      className="flex items-center gap-2 px-2 py-1 bg-brand-primary text-white rounded-lg text-[10px] font-semibold hover:bg-brand-secondary transition-colors"
+                    >
+                      {awbCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {awbCopied ? 'Copied' : 'Copy'}
+                    </button>
+                  )}
+                </div>
+                {order.awbNumber && (
+                  <a
+                    className="text-xs text-brand-primary font-semibold mt-2 inline-block"
+                    href={`https://backend.shipingtech.in/customer_api/order/track?awbs=${order.awbNumber}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Track on courier website
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

@@ -17,21 +17,26 @@ The ecosystem is divided into three core modules:
 
 2. TECH STACK & ECOSYSTEM
 -------------------------
-- Core: Node.js (v22.12.0), Express, React 18, Vite.
-- Styling: TailwindCSS + Vanilla CSS with "Luxury Minimalist" design tokens.
+- Core: Node.js (>=22), Express (v5.2), React 19, Vite (v8).
+- Styling: TailwindCSS (v4) + Vanilla CSS with "Luxury Minimalist" design tokens.
 - State Management: 
     - Frontend: Zustand (Atomic stores for Auth, Cart, UI state).
     - Data Fetching: TanStack Query (React Query v5) for caching.
 - Security: 
     - Authentication: PASETO (Token-based) with httpOnly cookie rotation.
     - Protection: Double-submit CSRF tokens, CORS origin filtering.
-- Geospatial & Address:
-    - Frontend: Google Maps Places API (Autocomplete).
-    - Backend: Google Address Validation API (Verification & Correction).
-    - Utilities: Postal Pincode API for automated City/State resolution.
+- Logistics & Shipping Fulfillment:
+    - Carrier Gateway: ShipingTech API (Dynamic rate options, automated shipment creation via UUID, optimized courier allocation, automated pickup booking, custom PDF packing slips, and live AWB status syncing).
+    - Geospatial & Address:
+        - Frontend: Google Maps Places API (Autocomplete).
+        - Backend: Google Address Validation API (Verification & Correction).
+        - Utilities: Postal Pincode API for automated City/State resolution.
 - Infrastructure: 
-    - Image Hosting: Cloudinary (Auto-optimization).
+    - Image & Asset Hosting: 
+        - Cloudinary CDN: Optimized storefront product catalogs and customer customization snapshots.
+        - Local Disk Storage: Server-side Multer disk-storage saving heavy custom service design blueprints (up to 50MB; .cdr, .psd, .pdf, .png, .jpg) directly in `/uploads/designs/`.
     - Email: Resend SDK (Custom branded templates).
+    - Cache/Rate-limit: Valkey/Redis via ioredis.
     - Database: PostgreSQL (Prisma ORM).
 
 3. DATABASE ARCHITECTURE (PRISMA)
@@ -60,6 +65,8 @@ The ecosystem is divided into three core modules:
 - Address Validation Flow:
     Non-blocking server-side validation that provides correction suggestions to users 
     to prevent shipping errors.
+- ShipingTech Logistics Engine:
+    Fully automated fulfillment integration. Upon standard order placement (Razorpay confirmation or COD submission), a shipment order is generated on ShipingTech instantly, saving a unique `shipingTechUUID` on the order. Administrators can query competitive shipping rates, assign courier partners (returning live AWB tracking codes), generate printable PDF packing slips, and schedule package pickups directly from the admin panel.
 
 6. RECENT ARCHITECTURAL EVOLUTIONS (May 2026)
 ---------------------------------------------
@@ -67,10 +74,12 @@ The ecosystem is divided into three core modules:
 - Address Intelligence: Implemented Google Maps Autocomplete and Address Validation.
 - Logistics Update: Integrated smart pincode lookup and updated official company 
   address to Chhaosari, Jhunjhunu.
+- Asset Storage Optimization: Standardized storefront catalog and customization snapshots to Cloudinary, while keeping heavyweight custom vector files (up to 50MB of .cdr, .psd, .pdf, etc.) in local disk storage to conserve CDN bandwidth.
 - Email Modernization: Refactored Resend templates with a unified luxury footer 
   and updated contact information.
 - Reliability: Fixed 401 interceptor loop bugs and standardized the Admin UI 
   to match the storefront's luxury theme.
+- Frontend Upgrade: Migrated to React 19, React Router v7, and Tailwind CSS v4.
 
 7. DIRECTORY OVERVIEW
 ---------------------
@@ -87,5 +96,5 @@ The ecosystem is divided into three core modules:
 - Address: WARD NO. 04, KUMAWAT COLONY, SITHAL ROAD, TEHSIL - GUDHA GORJI, Chhaosari, Jhunjhunu, Rajasthan - 333012
 
 ================================================================================
-Document Updated: 2026-05-15
+Document Updated: 2026-05-19
 ================================================================================

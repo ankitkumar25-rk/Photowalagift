@@ -1,0 +1,465 @@
+Tenant Customer API
+Aggregator Tenant API documentation helps you to integrate API's for your mobile or own web solution. It will help you integrate your system with shipping solution.
+📌 Steps in the Flow
+Login / Authentication
+
+Obtain an authentication token using your registered credentials.
+
+This token will be required for all subsequent API requests.
+
+Create Warehouse
+
+Define your warehouse(s) with address and contact details.
+
+All pickups will be scheduled from here.
+
+Create Order
+
+Submit shipment details including customer info, items, and delivery address.
+Get Closed Rate Options
+
+Fetch available logistics partners, shipping services, and pricing.
+Assign Courier
+
+Choose LSP & service (must match an option from the rate options API).
+Create Pickup Request
+
+Schedule the pickup for your order from the warehouse.
+Get Packing Slip
+
+Download/print the order’s packing slip to attach to the parcel.
+URL
+
+https://testbe.shipingtech.in/ - Devlopment
+
+https://backend.shipingtech.in/ - Production
+
+POST
+closedRateOptions
+/customer_api/rates
+Endpoint Description
+Fetch courier rate options instantly based on origin/destination pincodes, weight, and shipment details.
+
+This does not require an order UUID and is typically used for:
+
+Pre-checking courier charges
+
+Checkout page shipping estimations
+
+Comparing courier partners before order creation
+
+⚠️ Important:
+
+The values of lspId and service returned in this API must be used exactly in the [Assign Courier API] to confirm courier allocation.
+
+If you pass incorrect values, the assign step will fail.
+
+Method: POST
+URL: https://testbe.shipingtech.in/customer_api/rates -Devlopment
+
+https://backend.shipingtech.in/customer_api/rates - Production
+
+Headers
+
+The following header is mandatory for this API:
+
+Key	Value	Required
+x-api-key	key	Yes
+Example Request
+
+View More
+json
+{
+  "booking_code": 42,
+  "originPincode": "560001",
+  "destinationPincode": "110045",
+  "serviceCategory": "b2b",
+  "riskType": "carrierRisk",
+  "isGSTinclusiv": true,
+  "isCOD": true,
+  "selfDrop": false,
+  "codAmount": 1750,
+  "weightDetailsArray": [
+    {
+      "boxId": 12,
+      "docketNumber": "DKT99887766",
+      "numberOfBoxes": "2",
+      "weightKg": "3.2",
+      "lengthCm": "40",
+      "breadthCm": "25",
+      "heightCm": "20"
+    }
+  ]
+}
+Example Response
+
+View More
+json
+{
+    "rateOptions": [
+        {
+            "lspId": "delhivery",
+            "service": "Surface",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 207,
+                "rtoCharge": 0,
+                "fscCharge": 0,
+                "codCharge": 0,
+                "gst": 37.26,
+                "total": 244.26
+            },
+            "error": null,
+            "finalChargeableWeight": 8.1,
+            "tat": 2
+        },
+        {
+            "lspId": "delhivery",
+            "service": "Express",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 496,
+                "rtoCharge": 0,
+                "fscCharge": 0,
+                "codCharge": 0,
+                "gst": 89.28,
+                "total": 585.28
+            },
+            "error": null,
+            "finalChargeableWeight": 8.1,
+            "tat": 1
+        },
+        {
+            "lspId": "XpressBees",
+            "service": "XpressBees 10Kg",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 198,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 35.64,
+                "total": 233.64
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 2,
+            "courierId": 32
+        },
+        {
+            "lspId": "Ekart",
+            "service": "Ekart 5Kg",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 226,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 40.68,
+                "total": 266.68
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 2,
+            "courierId": 230
+        },
+        {
+            "lspId": "XpressBees",
+            "service": "XpressBees 5Kg",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 253,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 45.54,
+                "total": 298.54
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 2,
+            "courierId": 31
+        },
+        {
+            "lspId": "Ekart",
+            "service": "Ekart Air",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 306,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 55.08,
+                "total": 361.08
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": null,
+            "courierId": 376
+        },
+        {
+            "lspId": "Amazon",
+            "service": "Amazon ATS 5KG",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 340,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 61.2,
+                "total": 401.2
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 2,
+            "courierId": 183
+        },
+        {
+            "lspId": "XpressBees",
+            "service": "XpressBees 1KG",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 414,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 74.52,
+                "total": 488.52
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 2,
+            "courierId": 184
+        },
+        {
+            "lspId": "XpressBees",
+            "service": "XpressBees 0.5 Kg",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 428,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 77.04,
+                "total": 505.04
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 2,
+            "courierId": 29
+        },
+        {
+            "lspId": "BlueDart",
+            "service": "BlueDart Surface 0.5 Kg",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 619,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 111.42,
+                "total": 730.42
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 1,
+            "courierId": 290
+        },
+        {
+            "lspId": "BlueDart",
+            "service": "BlueDart Air 0.5KG",
+            "serviceCategory": "b2c",
+            "success": true,
+            "rateSummary": {
+                "tsAmount": 831,
+                "fsc": 0,
+                "docketCharge": 0,
+                "firstMileCharge": 0,
+                "odaCharge": 0,
+                "handlingCharge": 0,
+                "greenCharge": 0,
+                "codCharge": 0,
+                "riskSurcharge": 0,
+                "toPayCharge": 0,
+                "rtoCharge": 0,
+                "gst": 149.58,
+                "total": 980.58
+            },
+            "error": null,
+            "finalChargeableWeight": 9,
+            "tat": 2,
+            "courierId": 301
+        }
+    ]
+}
+AUTHORIZATION
+Bearer Token
+Token
+<token>
+
+HEADERS
+x-api-key
+<your_api_key>
+
+Body
+raw (json)
+View More
+json
+{
+    "booking_code": 9,
+    "originPincode": "122001",
+    "destinationPincode": "122001",
+    "serviceCategory": "b2c",
+    "riskType": "ownerRisk",
+    "isGSTinclusiv": true,
+    "isCOD": false,
+    "selfDrop": false,
+    "codAmount": "",
+    "invoiceValue": 2230,
+    "weightDetailsArray": [
+        {
+            "weightKg": "1",
+            "lengthCm": "10",
+            "breadthCm": "10",
+            "heightCm": "10",
+            "quantity": "1"
+        }
+    ]
+}
+Example Request
+closedRateOptions
+View More
+curl
+curl --location '/customer_api/rates' \
+--header 'x-api-key: <your_api_key>' \
+--data '{
+    "booking_code": 9,
+    "originPincode": "122001",
+    "destinationPincode": "122001",
+    "serviceCategory": "b2c",
+    "riskType": "ownerRisk",
+    "isGSTinclusiv": true,
+    "isCOD": false,
+    "selfDrop": false,
+    "codAmount": "",
+    "invoiceValue": 2230,
+    "weightDetailsArray": [
+        {
+            "weightKg": "1",
+            "lengthCm": "10",
+            "breadthCm": "10",
+            "heightCm": "10",
+            "quantity": "1"
+        }
+    ]
+}'
+Example Response
+Body
+Headers (0)
+No response body
+This request doesn't return any response body
+Tracking
+POST
+trackAll
+/customer_api/order/track?awbs=153291460109283&ref_ids&lrnum
+Endpoint Description
+Fetches the tracking details of shipments using one or more of the following identifiers:
+
+AWB Numbers (awbs)
+
+Reference IDs (ref_ids)
+
+LR Numbers (lrnum)
+
+Method: POST
+URL: https://testbe.shipingtech.in/customer_api/order/track -Devlopment
+
+https://backend.shipingtech.in/customer_api/order/track - Production
+
+Headers
+
+The following header is mandatory for this API:
+
+Key	Value	Required
+x-api-key	key	Yes
+AUTHORIZATION
+Bearer Token
+Token
+<token>
+
+HEADERS
+x-api-key
+<your_api_key>
+
+PARAMS
+awbs
+153291460109283
+
+ref_ids
+lrnum
