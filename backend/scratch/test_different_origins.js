@@ -1,5 +1,13 @@
-import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 import axios from 'axios';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from backend root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const BASE_URL = process.env.SHIPINGTECH_BASE_URL || 'https://backend.shipingtech.in';
 const API_KEY = process.env.SHIPINGTECH_API_KEY;

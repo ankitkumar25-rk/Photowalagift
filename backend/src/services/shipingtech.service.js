@@ -3,12 +3,6 @@ import axios from 'axios';
 const BASE_URL = process.env.SHIPINGTECH_BASE_URL;
 const API_KEY = process.env.SHIPINGTECH_API_KEY;
 
-// We use 'http://localhost:5173' as the request Origin header.
-// Since these are backend-to-backend API calls, spoofing the whitelisted local origin
-// allows requests to successfully pass ShipingTech's CORS API gateway in production
-// without requiring manual merchant dashboard origin updates.
-const requestOrigin = 'http://localhost:5173';
-
 let cachedToken = null;
 let tokenExpiry = null;
 
@@ -17,8 +11,6 @@ const shipClient = axios.create({
   headers: {
     'x-api-key': API_KEY,
     'Content-Type': 'application/json',
-    'Origin': requestOrigin,
-    'Referer': requestOrigin + '/',
   },
 });
 
@@ -32,17 +24,20 @@ export const getToken = async () => {
   console.log('[ShipingTech] Credentials - API_KEY exists:', !!API_KEY, '| Username:', process.env.SHIPINGTECH_USERNAME);
 
   try {
+    const tenantId = process.env.SHIPINGTECH_USERNAME;
     const { data } = await axios.post(
       `${BASE_URL}/customer_api/login`,
       {
         username: process.env.SHIPINGTECH_USERNAME,
         password: process.env.SHIPINGTECH_PASSWORD,
+        tenant_id: tenantId,
       },
       { 
         headers: { 
           'x-api-key': API_KEY,
-          'Origin': requestOrigin,
-          'Referer': requestOrigin + '/',
+          'tenant_id': tenantId,
+          'tenant-id': tenantId,
+          'x-tenant-id': tenantId,
         } 
       }
     );
@@ -66,6 +61,25 @@ shipClient.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Inject tenant validation headers to bypass CORS origin requirements
+  const tenantId = process.env.SHIPINGTECH_USERNAME;
+  if (tenantId) {
+    config.headers['tenant_id'] = tenantId;
+    config.headers['tenant-id'] = tenantId;
+    config.headers['x-tenant-id'] = tenantId;
+
+    // Inject tenant_id into JSON request bodies for POST requests to satisfy remote requirements
+    if (config.method && config.method.toLowerCase() === 'post') {
+      if (!config.data) {
+        config.data = {};
+      }
+      if (typeof config.data === 'object' && !(config.data instanceof URLSearchParams)) {
+        config.data.tenant_id = tenantId;
+      }
+    }
+  }
+
   return config;
 });
 
