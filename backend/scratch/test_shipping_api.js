@@ -1,5 +1,13 @@
-import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 import axios from 'axios';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from backend root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const BASE_URL = process.env.SHIPINGTECH_BASE_URL || 'https://backend.shipingtech.in';
 const API_KEY = process.env.SHIPINGTECH_API_KEY;
@@ -120,6 +128,12 @@ async function testApi() {
 
   console.log('\n=================== TEST 7: Order (Origin in lowercase: origin) ===================');
   await makeRequest('/customer_api/order', orderPayload, { 'origin': 'https://photowalagift.online' });
+
+  console.log('\n=================== TEST 8: Rates (Tenant Headers Bypass) ===================');
+  await makeRequest('/customer_api/rates', { ...ratesPayload, tenant_id: process.env.SHIPINGTECH_USERNAME }, { 'tenant_id': process.env.SHIPINGTECH_USERNAME });
+
+  console.log('\n=================== TEST 9: Order (Tenant Headers Bypass) ===================');
+  await makeRequest('/customer_api/order', { ...orderPayload, tenant_id: process.env.SHIPINGTECH_USERNAME }, { 'tenant_id': process.env.SHIPINGTECH_USERNAME });
 }
 
 testApi();
