@@ -59,35 +59,26 @@ async function testOrderBypass() {
     referenceId: 'test-' + Date.now(),
   };
 
-  // Diagnostic Matrix
-  const tests = [
-    // Header variations (no body/query injection)
-    { name: 'Header tenant_id only', headers: { 'tenant_id': process.env.SHIPINGTECH_USERNAME }, body: {}, query: '' },
-    { name: 'Header tenant-id only', headers: { 'tenant-id': process.env.SHIPINGTECH_USERNAME }, body: {}, query: '' },
-    { name: 'Header x-tenant-id only', headers: { 'x-tenant-id': process.env.SHIPINGTECH_USERNAME }, body: {}, query: '' },
-    { name: 'Header tenantId only', headers: { 'tenantId': process.env.SHIPINGTECH_USERNAME }, body: {}, query: '' },
-    { name: 'Header tenantid only', headers: { 'tenantid': process.env.SHIPINGTECH_USERNAME }, body: {}, query: '' },
-    { name: 'Header x-tenantid only', headers: { 'x-tenantid': process.env.SHIPINGTECH_USERNAME }, body: {}, query: '' },
-
-    // Body variations (no header/query injection)
-    { name: 'Body tenant_id only', headers: {}, body: { tenant_id: process.env.SHIPINGTECH_USERNAME }, query: '' },
-    { name: 'Body tenant-id only', headers: {}, body: { 'tenant-id': process.env.SHIPINGTECH_USERNAME }, query: '' },
-    { name: 'Body tenantId only', headers: {}, body: { tenantId: process.env.SHIPINGTECH_USERNAME }, query: '' },
-    { name: 'Body tenantid only', headers: {}, body: { tenantid: process.env.SHIPINGTECH_USERNAME }, query: '' },
-
-    // Combined variations
-    { name: 'Combined tenant_id (headers & body)', headers: { 'tenant_id': process.env.SHIPINGTECH_USERNAME }, body: { tenant_id: process.env.SHIPINGTECH_USERNAME }, query: '' },
-    { name: 'Combined tenantId (headers & body)', headers: { 'tenantId': process.env.SHIPINGTECH_USERNAME }, body: { tenantId: process.env.SHIPINGTECH_USERNAME }, query: '' },
-
-    // Query parameter variations
-    { name: 'Query param ?tenant_id=...', headers: {}, body: {}, query: `?tenant_id=${process.env.SHIPINGTECH_USERNAME}` },
-    { name: 'Query param ?tenantId=...', headers: {}, body: {}, query: `?tenantId=${process.env.SHIPINGTECH_USERNAME}` },
-    { name: 'Query param ?tenant-id=...', headers: {}, body: {}, query: `?tenant-id=${process.env.SHIPINGTECH_USERNAME}` },
-    { name: 'Query param ?tenantid=...', headers: {}, body: {}, query: `?tenantid=${process.env.SHIPINGTECH_USERNAME}` },
-    
-    // Query param + Headers
-    { name: 'Query param + Headers (tenant_id)', headers: { 'tenant_id': process.env.SHIPINGTECH_USERNAME }, body: {}, query: `?tenant_id=${process.env.SHIPINGTECH_USERNAME}` },
+  const decodedValues = [
+    '183',
+    183,
+    'wlt_mpchxeu8_1XQANW',
+    'mpchxeu8'
   ];
+
+  // Diagnostic Matrix
+  const tests = [];
+  
+  for (const val of decodedValues) {
+    tests.push(
+      { name: `Header tenant_id: ${val}`, headers: { 'tenant_id': val }, body: {}, query: '' },
+      { name: `Header tenant-id: ${val}`, headers: { 'tenant-id': val }, body: {}, query: '' },
+      { name: `Header x-tenant-id: ${val}`, headers: { 'x-tenant-id': val }, body: {}, query: '' },
+      { name: `Body tenant_id: ${val}`, headers: {}, body: { tenant_id: val }, query: '' },
+      { name: `Combined tenant_id (headers & body): ${val}`, headers: { 'tenant_id': val }, body: { tenant_id: val }, query: '' },
+      { name: `Query param ?tenant_id=${val}`, headers: {}, body: {}, query: `?tenant_id=${val}` }
+    );
+  }
 
   for (const t of tests) {
     try {
