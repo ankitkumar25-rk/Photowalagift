@@ -19,6 +19,7 @@ async function testWarehouses() {
 
   // 1. Get token
   let token = null;
+  let loginData = null;
   try {
     const { data } = await axios.post(
       `${BASE_URL}/customer_api/login`,
@@ -28,102 +29,85 @@ async function testWarehouses() {
       },
       { headers: { 'x-api-key': API_KEY } }
     );
+    loginData = data;
     token = data?.accessToken || data?.token;
     console.log('Login success! Token obtained.');
+    console.log('Login response structure:', JSON.stringify(loginData, null, 2));
   } catch (err) {
     console.error('Login failed:', err.response?.data || err.message);
     return;
   }
 
-  const tenantId = process.env.SHIPINGTECH_USERNAME;
+  // Extract all potential tenant/merchant values from credentials and JWT
+  const username = process.env.SHIPINGTECH_USERNAME;
+  const bookingCode = process.env.SHIPINGTECH_BOOKING_CODE || '9';
+  const walletId = 'wlt_mpchxeu8_1XQANW'; // extracted from your JWT
 
-  // Let's build a matrix of tests to see what combinations work
-  const tests = [
-    // 1. No Origin, only tenant headers (what we tried before)
-    {
-      name: 'No Origin, tenant headers in body and headers',
-      headers: {
-        'tenant_id': tenantId,
-        'tenant-id': tenantId,
-        'x-tenant-id': tenantId,
-      },
-      body: { tenant_id: tenantId },
-      query: '',
-    },
-    // 2. HTTP localhost origins
-    {
-      name: 'Origin: http://localhost:5173',
-      headers: { 'Origin': 'http://localhost:5173' },
-      body: {},
-      query: '',
-    },
-    {
-      name: 'Origin: http://localhost:3000',
-      headers: { 'Origin': 'http://localhost:3000' },
-      body: {},
-      query: '',
-    },
-    {
-      name: 'Origin: http://localhost:5174',
-      headers: { 'Origin': 'http://localhost:5174' },
-      body: {},
-      query: '',
-    },
-    // 3. Production online origins
-    {
-      name: 'Origin: https://photowalagift.online',
-      headers: { 'Origin': 'https://photowalagift.online' },
-      body: {},
-      query: '',
-    },
-    {
-      name: 'Origin: https://www.photowalagift.online',
-      headers: { 'Origin': 'https://www.photowalagift.online' },
-      body: {},
-      query: '',
-    },
-    {
-      name: 'Origin: https://admin.photowalagift.online',
-      headers: { 'Origin': 'https://admin.photowalagift.online' },
-      body: {},
-      query: '',
-    },
-    // 4. Query Parameter tenant_id
-    {
-      name: 'Query param ?tenant_id=username',
-      headers: {},
-      body: {},
-      query: `?tenant_id=${tenantId}`,
-    },
-    // 5. Query Parameter tenant-id
-    {
-      name: 'Query param ?tenant-id=username',
-      headers: {},
-      body: {},
-      query: `?tenant-id=${tenantId}`,
-    },
-    // 6. Header origin in lowercase
-    {
-      name: 'Lowercase origin header: http://localhost:5173',
-      headers: { 'origin': 'http://localhost:5173' },
-      body: {},
-      query: '',
-    },
-    // 7. Combined whitelisted origin + tenant headers
-    {
-      name: 'Origin: https://photowalagift.online + Tenant headers',
-      headers: {
-        'Origin': 'https://photowalagift.online',
-        'tenant_id': tenantId,
-      },
-      body: { tenant_id: tenantId },
-      query: `?tenant_id=${tenantId}`,
-    },
+  const valueOptions = [
+    { label: 'Username', val: username },
+    { label: 'Booking Code', val: bookingCode },
+    { label: 'Wallet ID', val: walletId },
+    { label: 'Hardcoded project number', val: '740656906848' }
   ];
 
-  for (const t of tests) {
+  // We will sweep both POST and GET requests since list endpoints are sometimes GET
+  const methods = ['POST', 'GET'];
+
+  const testMatrix = [];
+
+  // Generate casing and header/query/body permutations
+  for (const { label, val } of valueOptions) {
+    if (!val) continue;
+
+    const variations = [
+      { key: 'tenant_id', location: 'header' },
+      { key: 'tenant-id', location: 'header' },
+      { key: 'tenantId', location: 'header' },
+      { key: 'tenantid', location: 'header' },
+      { key: 'x-tenant-id', location: 'header' },
+      { key: 'x-tenantId', location: 'header' },
+      
+      { key: 'tenant_id', location: 'query' },
+      { key: 'tenant-id', location: 'query' },
+      { key: 'tenantId', location: 'query' },
+      { key: 'tenantid', location: 'query' },
+
+      { key: 'tenant_id', location: 'body' },
+      { key: 'tenant-id', location: 'body' },
+      { key: 'tenantId', location: 'body' },
+      { key: 'tenantid', location: 'body' },
+    ];
+
+    for (const v of variations) {
+      for (const method of methods) {
+        testMatrix.push({
+          name: `[${method}] Value: ${label} (${val}) | Key: ${v.key} in ${v.location}`,
+          method,
+          headers: v.location === 'header' ? { [v.key]: val } : {},
+          body: v.location === 'body' && method === 'POST' ? { [v.key]: val } : {},
+          query: v.location === 'query' ? `?${v.key}=${encodeURIComponent(val)}` : '',
+        });
+      }
+    }
+  }
+
+  // Also let's test absolute raw clean request with NO custom headers or body just to verify
+  for (const method of methods) {
+    testMatrix.push({
+      name: `[${method}] Pure authentication only (No origin or tenant parameter)`,
+      method,
+      headers: {},
+      body: {},
+      query: '',
+    });
+  }
+
+  console.log(`\nGenerated ${testMatrix.length} diagnostic tests. Beginning execution...\n`);
+
+  let successCount = 0;
+
+  for (const [index, t] of testMatrix.entries()) {
     try {
-      console.log(`\n=================== ${t.name} ===================`);
       const headers = {
         'x-api-key': API_KEY,
         'Content-Type': 'application/json',
@@ -131,18 +115,33 @@ async function testWarehouses() {
         ...t.headers,
       };
 
-      const url = `/customer_api/warehouses${t.query}`;
-      const { data } = await axios.post(
-        `${BASE_URL}${url}`,
-        t.body,
-        { headers }
-      );
-      console.log('SUCCESS! Warehouses found:', Array.isArray(data) ? data.length : typeof data, data);
+      const url = `${BASE_URL}/customer_api/warehouses${t.query}`;
+      
+      let res;
+      if (t.method === 'POST') {
+        res = await axios.post(url, t.body, { headers });
+      } else {
+        res = await axios.get(url, { headers });
+      }
+
+      console.log(`\n[SUCCESS #${++successCount}] Test #${index + 1}: ${t.name}`);
+      console.log(`Response Status:`, res.status);
+      console.log(`Response Data:`, JSON.stringify(res.data).slice(0, 300));
     } catch (err) {
-      console.log('FAILED:', err.response?.status, err.response?.data || err.message);
+      const status = err.response?.status || 'network';
+      const errMsg = JSON.stringify(err.response?.data) || err.message;
+      
+      // Only print if it's NOT the standard "tenant_id or origin is required" to filter noise,
+      // or print everything if we want full diagnostics.
+      if (!errMsg.includes('tenant_id or origin is required')) {
+        console.log(`[ALT ERROR] Test #${index + 1}: ${t.name} -> FAILED: ${status} ${errMsg}`);
+      }
     }
   }
+
+  console.log(`\nDiagnostic execution completed. ${successCount} successful requests found.`);
 }
 
 testWarehouses();
+
 
