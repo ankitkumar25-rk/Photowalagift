@@ -47,7 +47,11 @@ async function testWarehouses() {
     { label: 'Username', val: username },
     { label: 'Booking Code', val: bookingCode },
     { label: 'Wallet ID', val: walletId },
-    { label: 'Hardcoded project number', val: '740656906848' }
+    { label: 'Hardcoded project number', val: '740656906848' },
+    { label: 'JWT code 183 (string)', val: '183' },
+    { label: 'JWT code 183 (number)', val: 183 },
+    { label: 'Booking code 9 (string)', val: '9' },
+    { label: 'Booking code 9 (number)', val: 9 }
   ];
 
   // We will sweep both POST and GET requests since list endpoints are sometimes GET
