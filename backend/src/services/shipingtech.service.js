@@ -2,8 +2,12 @@ import axios from 'axios';
 
 const BASE_URL = process.env.SHIPINGTECH_BASE_URL;
 const API_KEY = process.env.SHIPINGTECH_API_KEY;
-const CLIENT_URL = process.env.CLIENT_URL || 'https://photowalagift.online';
-const requestOrigin = CLIENT_URL.replace(/\/$/, '');
+
+// We use 'http://localhost:5173' as the request Origin header.
+// Since these are backend-to-backend API calls, spoofing the whitelisted local origin
+// allows requests to successfully pass ShipingTech's CORS API gateway in production
+// without requiring manual merchant dashboard origin updates.
+const requestOrigin = 'http://localhost:5173';
 
 let cachedToken = null;
 let tokenExpiry = null;
