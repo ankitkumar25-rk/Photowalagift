@@ -60,10 +60,10 @@ async function testOrderBypass() {
   };
 
   const decodedValues = [
-    '183',
-    183,
-    'wlt_mpchxeu8_1XQANW',
-    'mpchxeu8'
+    'https://localhost:5173',
+    'https://localhost:3000',
+    'https://localhost:5174',
+    'https://localhost'
   ];
 
   // Diagnostic Matrix
@@ -71,12 +71,7 @@ async function testOrderBypass() {
   
   for (const val of decodedValues) {
     tests.push(
-      { name: `Header tenant_id: ${val}`, headers: { 'tenant_id': val }, body: {}, query: '' },
-      { name: `Header tenant-id: ${val}`, headers: { 'tenant-id': val }, body: {}, query: '' },
-      { name: `Header x-tenant-id: ${val}`, headers: { 'x-tenant-id': val }, body: {}, query: '' },
-      { name: `Body tenant_id: ${val}`, headers: {}, body: { tenant_id: val }, query: '' },
-      { name: `Combined tenant_id (headers & body): ${val}`, headers: { 'tenant_id': val }, body: { tenant_id: val }, query: '' },
-      { name: `Query param ?tenant_id=${val}`, headers: {}, body: {}, query: `?tenant_id=${val}` }
+      { name: `Origin https: ${val}`, headers: { 'Origin': val }, body: {}, query: '' }
     );
   }
 
