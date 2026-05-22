@@ -25,6 +25,9 @@ export const getToken = async () => {
 
   try {
     const tenantId = process.env.SHIPINGTECH_USERNAME;
+    const clientUrl = process.env.CLIENT_URL || 'https://photowalagift.online';
+    const origin = clientUrl.replace(/\/$/, '');
+
     const { data } = await axios.post(
       `${BASE_URL}/customer_api/login`,
       {
@@ -38,6 +41,8 @@ export const getToken = async () => {
           'tenant_id': tenantId,
           'tenant-id': tenantId,
           'x-tenant-id': tenantId,
+          'Origin': origin,
+          'Referer': origin + '/',
         } 
       }
     );
@@ -79,6 +84,13 @@ shipClient.interceptors.request.use(async (config) => {
       }
     }
   }
+
+  // Also inject whitelisted Origin & Referer headers to satisfy endpoints (like warehouses/order)
+  // that require a whitelisted origin.
+  const clientUrl = process.env.CLIENT_URL || 'https://photowalagift.online';
+  const origin = clientUrl.replace(/\/$/, '');
+  config.headers['Origin'] = origin;
+  config.headers['Referer'] = origin + '/';
 
   return config;
 });

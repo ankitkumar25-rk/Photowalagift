@@ -12,7 +12,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const BASE_URL = process.env.SHIPINGTECH_BASE_URL || 'https://backend.shipingtech.in';
 const API_KEY = process.env.SHIPINGTECH_API_KEY;
 
-async function testOrderBypass() {
+async function testDomainTenants() {
   console.log('BASE_URL:', BASE_URL);
   console.log('API_KEY exists:', !!API_KEY);
   console.log('Username:', process.env.SHIPINGTECH_USERNAME);
@@ -59,24 +59,23 @@ async function testOrderBypass() {
     referenceId: 'test-' + Date.now(),
   };
 
-  const decodedValues = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:5174',
+  // Candidates for valid tenant_id
+  const candidates = [
+    'photowalagift.online',
     'https://photowalagift.online',
+    'www.photowalagift.online',
     'https://www.photowalagift.online',
-    'https://admin.photowalagift.online',
-    'https://localhost:5173',
-    'https://localhost:3000',
-    'https://localhost:5174'
+    'photowalagiftphotowalagift',
+    'photowala',
+    'admin.photowalagift.online'
   ];
 
-  // Diagnostic Matrix
   const tests = [];
-  
-  for (const val of decodedValues) {
+  for (const val of candidates) {
     tests.push(
-      { name: `Origin https: ${val}`, headers: { 'Origin': val }, body: {}, query: '' }
+      { name: `Header tenant_id: ${val}`, headers: { 'tenant_id': val }, body: {}, query: '' },
+      { name: `Body tenant_id: ${val}`, headers: {}, body: { tenant_id: val }, query: '' },
+      { name: `Query param ?tenant_id=${val}`, headers: {}, body: {}, query: `?tenant_id=${val}` }
     );
   }
 
@@ -104,4 +103,4 @@ async function testOrderBypass() {
   }
 }
 
-testOrderBypass();
+testDomainTenants();
