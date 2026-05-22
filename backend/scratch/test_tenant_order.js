@@ -29,7 +29,7 @@ async function testTenantHeaders() {
       { headers: { 'x-api-key': API_KEY } }
     );
     token = data?.accessToken || data?.token;
-    console.log('Login success! Token obtained.');
+    console.log('Login success! Full response data:', JSON.stringify(data, null, 2));
   } catch (err) {
     console.error('Login failed:', err.response?.data || err.message);
     return;
