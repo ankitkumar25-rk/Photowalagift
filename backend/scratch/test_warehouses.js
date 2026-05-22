@@ -36,14 +36,18 @@ async function testWarehouses() {
 
   // 2. Fetch warehouses
   try {
+    const tenantId = process.env.SHIPINGTECH_USERNAME;
     const { data } = await axios.post(
       `${BASE_URL}/customer_api/warehouses`,
-      {},
+      { tenant_id: tenantId },
       {
         headers: {
           'x-api-key': API_KEY,
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'tenant_id': tenantId,
+          'tenant-id': tenantId,
+          'x-tenant-id': tenantId
         }
       }
     );
