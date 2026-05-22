@@ -14,7 +14,7 @@ const shipClient = axios.create({
   },
 });
 
-export const getToken = async () => {
+export const login = async () => {
   if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
     console.log('[ShipingTech] Using cached authentication token');
     return cachedToken;
@@ -24,25 +24,16 @@ export const getToken = async () => {
   console.log('[ShipingTech] Credentials - API_KEY exists:', !!API_KEY, '| Username:', process.env.SHIPINGTECH_USERNAME);
 
   try {
-    const tenantId = process.env.SHIPINGTECH_USERNAME;
-    const clientUrl = process.env.CLIENT_URL || 'https://photowalagift.online';
-    const origin = clientUrl.replace(/\/$/, '');
-
     const { data } = await axios.post(
       `${BASE_URL}/customer_api/login`,
       {
         username: process.env.SHIPINGTECH_USERNAME,
         password: process.env.SHIPINGTECH_PASSWORD,
-        tenant_id: tenantId,
       },
       { 
         headers: { 
           'x-api-key': API_KEY,
-          'tenant_id': tenantId,
-          'tenant-id': tenantId,
-          'x-tenant-id': tenantId,
-          'Origin': origin,
-          'Referer': origin + '/',
+          'Content-Type': 'application/json',
         } 
       }
     );
@@ -61,36 +52,17 @@ export const getToken = async () => {
   }
 };
 
+export const getToken = login;
+
 shipClient.interceptors.request.use(async (config) => {
-  const token = await getToken();
+  const token = await login();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
-  // Inject tenant validation headers to bypass CORS origin requirements
-  const tenantId = process.env.SHIPINGTECH_USERNAME;
-  if (tenantId) {
-    config.headers['tenant_id'] = tenantId;
-    config.headers['tenant-id'] = tenantId;
-    config.headers['x-tenant-id'] = tenantId;
-
-    // Inject tenant_id into JSON request bodies for POST requests to satisfy remote requirements
-    if (config.method && config.method.toLowerCase() === 'post') {
-      if (!config.data) {
-        config.data = {};
-      }
-      if (typeof config.data === 'object' && !(config.data instanceof URLSearchParams)) {
-        config.data.tenant_id = tenantId;
-      }
-    }
-  }
-
-  // Also inject whitelisted Origin & Referer headers to satisfy endpoints (like warehouses/order)
-  // that require a whitelisted origin.
-  const clientUrl = process.env.CLIENT_URL || 'https://photowalagift.online';
-  const origin = clientUrl.replace(/\/$/, '');
-  config.headers['Origin'] = origin;
-  config.headers['Referer'] = origin + '/';
+  
+  // Set clean server-to-server headers only
+  config.headers['x-api-key'] = API_KEY;
+  config.headers['Content-Type'] = 'application/json';
 
   return config;
 });
@@ -125,7 +97,7 @@ export const getWarehouses = async () => {
   }
 };
 
-export const getShippingRates = async ({
+export const getRates = async ({
   destinationPincode,
   weightKg,
   lengthCm = 10,
@@ -172,7 +144,9 @@ export const getShippingRates = async ({
   }
 };
 
-export const createShipmentOrder = async (orderData) => {
+export const getShippingRates = getRates;
+
+export const createOrder = async (orderData) => {
   console.log('[ShipingTech] Creating shipment order with payload:', JSON.stringify(orderData, null, 2));
   try {
     const { data } = await shipClient.post('/customer_api/order', orderData);
@@ -186,6 +160,8 @@ export const createShipmentOrder = async (orderData) => {
     throw err;
   }
 };
+
+export const createShipmentOrder = createOrder;
 
 export const getOrderByUUID = async (uuid) => {
   console.log('[ShipingTech] Getting order by UUID:', uuid);
@@ -262,7 +238,7 @@ export const getPackingSlip = async (uuid) => {
   }
 };
 
-export const trackShipment = async ({ awb, refId }) => {
+export const track = async ({ awb, refId }) => {
   const params = new URLSearchParams();
   if (awb) params.append('awbs', awb);
   if (refId) params.append('ref_ids', refId);
@@ -279,3 +255,5 @@ export const trackShipment = async ({ awb, refId }) => {
     throw err;
   }
 };
+
+export const trackShipment = track;
