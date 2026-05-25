@@ -35,7 +35,7 @@ A comprehensive and secure e-commerce platform specifically designed for selling
 
 ## ✨ Key Features
 
-- **Advanced Accounts**: Email/Password login, Google Social Login, Email Verification, and Password Recovery.
+- **Advanced Accounts**: Email/Password login, Google Social Login, Email Verification, and Password Recovery. Simple phone number registration (10-digit Indian format).
 - **Catalog Management**: Hierarchical categories, dynamic product filtering (price, category), and smart sorting.
 - **Order Lifecycle**: Secure checkout, Razorpay integration, automated stock tracking, and webhook validation.
 - **Returns & Refunds**: End-to-end lifecycle management for order returns and automated refund processing.
@@ -85,6 +85,7 @@ npm run dev
 
 ## 🔑 Environment Variables
 
+### Backend
 The backend requires the following configuration in `.env`:
 
 | Variable | Description |
@@ -98,6 +99,16 @@ The backend requires the following configuration in `.env`:
 | `RESEND_API_KEY` | Resend API Key |
 
 *(See `backend/.env.example` for the full list)*
+
+### Frontend (Store & Admin)
+The frontend requires:
+
+| Variable | Description |
+| :--- | :--- |
+| `VITE_API_BASE_URL` | Backend API base URL (e.g., `http://localhost:5000/api`) |
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API key for address validation |
+
+*(See `frontend-store/.env.example` for the full list)*
 
 ---
 

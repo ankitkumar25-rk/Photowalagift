@@ -16,7 +16,7 @@ const googleConfigured = Boolean(
 const validateRegistration = [
   body('name').notEmpty().withMessage('Name is required').trim(),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
-  body('phone').optional().isLength({ min: 10, max: 10 }).withMessage('Phone must be 10 digits'),
+  body('phone').notEmpty().withMessage('Phone number is required').isLength({ min: 10, max: 10 }).withMessage('Phone must be exactly 10 digits'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   (req, res, next) => {
     const errors = validationResult(req);

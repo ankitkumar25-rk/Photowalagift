@@ -82,20 +82,24 @@ export default function Register() {
               <input id="reg-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field" placeholder="you@example.com" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Phone (optional)</label>
-              <input 
-                id="reg-phone" 
-                type="tel" 
-                value={form.phone} 
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  if (val.length <= 10) setForm({ ...form, phone: val });
-                }} 
-                pattern="[0-9]{10}"
-                className="input-field" 
-                placeholder="10-digit mobile number" 
-              />
-              <p className="text-[10px] text-gray-400 mt-1">If provided, must be exactly 10 digits.</p>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Phone Number</label>
+              <div className="flex">
+                <div className="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg flex items-center font-semibold text-gray-600">+91</div>
+                <input 
+                  id="reg-phone" 
+                  type="tel" 
+                  required
+                  value={form.phone} 
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val.length <= 10) setForm({ ...form, phone: val });
+                  }} 
+                  pattern="[0-9]{10}"
+                  className="input-field rounded-l-none" 
+                  placeholder="10-digit mobile number" 
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Must be exactly 10 digits.</p>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
