@@ -275,7 +275,11 @@ export default function ProductDetail() {
   const inWishlist = product ? isWishlisted(product.id) : false;
 
   const toggleWishlist = async () => {
-    if (!user) { toast.error('Please login to use wishlist'); navigate('/login'); return; }
+    if (!user) {
+      toast.error('Please login to use wishlist');
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+      return;
+    }
     try {
       if (inWishlist) {
         await triggerWishlist({ productId: product.id, isWishlisted: true });
@@ -747,7 +751,7 @@ export default function ProductDetail() {
                   <ReviewForm productId={product.id} onSuccess={fetchProduct} />
                 ) : (
                   <div className="p-4 bg-cream-100 rounded-2xl text-center text-sm text-gray-500">
-                    <Link to="/login" className="text-brand-primary font-semibold hover:underline">Login</Link> to write a review
+                    <Link to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} className="text-brand-primary font-semibold hover:underline">Login</Link> to write a review
                   </div>
                 )}
 

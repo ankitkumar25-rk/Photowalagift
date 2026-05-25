@@ -14,7 +14,7 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-  const googleAuthUrl = `${apiBaseUrl}/auth/google`;
+  const googleAuthUrl = `${apiBaseUrl}/auth/google?redirect=${encodeURIComponent(redirect)}`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,7 +104,7 @@ export default function Login() {
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="text-brand-primary font-semibold hover:underline">Create one</Link>
+            <Link to={`/register?redirect=${encodeURIComponent(redirect)}`} className="text-brand-primary font-semibold hover:underline">Create one</Link>
           </p>
         </div>
       </div>

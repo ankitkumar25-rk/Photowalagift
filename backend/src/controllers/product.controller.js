@@ -74,6 +74,7 @@ export const listProducts = asyncHandler(async (req, res) => {
     isFeatured,
     sort = 'createdAt', order = 'desc',
     tags,
+    search,
   } = req.query;
 
   const where = { isActive: true };
@@ -86,6 +87,13 @@ export const listProducts = asyncHandler(async (req, res) => {
   }
   if (tags) {
     where.tags = { hasSome: tags.split(',') };
+  }
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { tags: { hasSome: [search.toLowerCase()] } },
+    ];
   }
 
   const skip = (Number(page) - 1) * Number(limit);

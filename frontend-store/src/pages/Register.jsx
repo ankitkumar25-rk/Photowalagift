@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff } from 'lucide-react';
@@ -11,8 +11,10 @@ export default function Register() {
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-  const googleAuthUrl = `${apiBaseUrl}/auth/google`;
+  const googleAuthUrl = `${apiBaseUrl}/auth/google?redirect=${encodeURIComponent(redirect)}`;
 
   const getPasswordStrength = (pw) => {
     let score = 0;
@@ -35,7 +37,7 @@ export default function Register() {
     try {
       await register(trimmedForm);
       toast.success('Welcome to Photowala! 🏆');
-      navigate('/', { replace: true });
+      navigate(redirect, { replace: true });
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Registration failed. Please try again.');
     }
@@ -156,7 +158,7 @@ export default function Register() {
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-brand-primary font-semibold hover:underline">Sign in</Link>
+            <Link to={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-brand-primary font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
       </div>

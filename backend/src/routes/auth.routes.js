@@ -35,11 +35,14 @@ router.post('/refresh',                        authController.refresh);
 router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
 router.post('/reset-password',  authRateLimiter, authController.resetPassword);
 
-// Google OAuth
 if (googleConfigured) {
-  router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email'],
-  }));
+  router.get('/google', (req, res, next) => {
+    const redirect = req.query.redirect || '/';
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      state: typeof redirect === 'string' ? redirect : '/',
+    })(req, res, next);
+  });
   router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login?error=oauth` }),
     authController.googleCallback

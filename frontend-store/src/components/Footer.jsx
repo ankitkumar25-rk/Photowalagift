@@ -10,12 +10,12 @@ export default function Footer() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1 space-y-4">
-            {/* Logo in white card — matches brand badge style */}
-            <div className="inline-flex items-center justify-center bg-white rounded-2xl px-2 py-2 shadow-lg">
+            {/* Elegant Luxury Branded Badge */}
+            <div className="inline-flex items-center justify-center bg-[#fffdfb] rounded-2xl px-5 py-2.5 border border-brand-secondary/35 shadow-[0_8px_32px_rgba(91,63,47,0.15)] transition-all hover:border-brand-secondary">
               <img
                 src={brandAssets.logo}
                 alt="Photowala"
-                className="h-20 w-auto object-contain"
+                className="h-14 w-auto object-contain"
               />
             </div>
             <p className="text-[#d7c4b0] text-sm leading-relaxed">

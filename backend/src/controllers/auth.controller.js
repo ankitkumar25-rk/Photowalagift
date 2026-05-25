@@ -233,7 +233,10 @@ export const googleCallback = asyncHandler(async (req, res) => {
   const encodedAccessToken = encodeURIComponent(accessToken);
   const encodedRefreshToken = encodeURIComponent(refreshToken);
   const clientUrl = String(process.env.CLIENT_URL || '').replace(/\/$/, '');
-  const redirectUrl = `${clientUrl}/auth/success?access_token=${encodedAccessToken}&refresh_token=${encodedRefreshToken}&success=true`;
+  
+  const state = req.query.state || '/';
+  const encodedState = encodeURIComponent(state);
+  const redirectUrl = `${clientUrl}/auth/success?access_token=${encodedAccessToken}&refresh_token=${encodedRefreshToken}&success=true&redirect=${encodedState}`;
   
   res.redirect(redirectUrl);
 });

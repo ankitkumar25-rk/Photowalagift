@@ -28,10 +28,8 @@ export default function Navbar() {
 
 
   const navLinks = [
+    { to: '/', label: 'Home' },
     { to: '/products', label: 'Shop' },
-    { to: '/categories/trophies', label: 'Trophies' },
-    { to: '/categories/corporate-gifts', label: 'Corporate Gifts' },
-    { to: '/categories/momentos', label: 'Momentos' },
     { to: '/services', label: 'Services' },
     { to: '/bulk-orders', label: 'Bulk Deals', badge: 'New' },
   ];
@@ -66,7 +64,7 @@ export default function Navbar() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-2">
             {navLinks.map((l) => {
-              const isActive = location.pathname.startsWith(l.to);
+              const isActive = l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to);
               return (
                 <Link
                   key={l.label}
@@ -149,7 +147,7 @@ export default function Navbar() {
                   </div>
                 </div>
               ) : (
-                <Link to="/login" className="btn-primary py-2 rounded-3xl px-4 text-xs">
+                <Link to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} className="btn-primary py-2 rounded-3xl px-4 text-xs">
                   <User className="w-4 h-4" /> Login
                 </Link>
               )}
@@ -180,7 +178,7 @@ export default function Navbar() {
             </div>
             <div className="space-y-4">
               {navLinks.map((l) => {
-                const isActive = location.pathname.startsWith(l.to);
+                const isActive = l.to === '/' ? location.pathname === '/' : location.pathname.startsWith(l.to);
                 return (
                   <Link
                     key={l.label}
@@ -236,7 +234,7 @@ export default function Navbar() {
               )}
               {!isHydrating && !user && (
                 <Link
-                  to="/login"
+                  to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
                   onClick={() => setMenuOpen(false)}
                   className="block px-4 py-2 text-sm font-semibold text-brand-primary rounded-lg hover:bg-brand-surface hover:text-brand-secondary transition-colors"
                 >

@@ -14,6 +14,7 @@ export default function AuthSuccess() {
     const params = new URLSearchParams(window.location.search);
     const urlAccessToken = params.get('access_token') || params.get('accessToken');
     const urlRefreshToken = params.get('refresh_token') || params.get('refreshToken');
+    const redirect = params.get('redirect') || '/';
     const storedAccessToken = localStorage.getItem('token');
     const storedRefreshToken = localStorage.getItem('refreshToken');
     const accessToken = urlAccessToken || storedAccessToken;
@@ -92,9 +93,9 @@ export default function AuthSuccess() {
     const attemptFetchMe = async () => {
       try {
         await fetchMe();
-        console.log('[Auth] fetchMe successful, redirecting to home');
+        console.log('[Auth] fetchMe successful, redirecting to:', redirect);
         toast.success('Signed in successfully!');
-        navigate('/', { replace: true });
+        navigate(redirect, { replace: true });
       } catch (err) {
         retryCount++;
         console.error(`[Auth] fetchMe attempt ${retryCount} failed:`, err.message);

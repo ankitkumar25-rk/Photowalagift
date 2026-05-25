@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { SlidersHorizontal, X, ChevronRight } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { productsApi, categoriesApi } from '../api';
 import ProductCard from '../components/ProductCard';
@@ -16,6 +16,38 @@ export default function Products() {
   const [filters, setFilters] = useState({ page: 1, limit: 20 });
   const [sortValue, setSortValue] = useState('createdAt-desc');
   const [showFilters, setShowFilters] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  const setFilter = useCallback((key, value) => {
+    setFilters((f) => ({ ...f, [key]: value, page: 1 }));
+  }, []);
+
+  const clearFilter = useCallback((key) => {
+    setFilters((f) => {
+      const n = { ...f };
+      delete n[key];
+      return { ...n, page: 1 };
+    });
+  }, []);
+
+  const handleSearchChange = (val) => {
+    setSearchInput(val);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      if (val.trim()) {
+        setFilter('search', val.trim());
+      } else {
+        clearFilter('search');
+      }
+    }, 450);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    clearFilter('search');
+  };
 
   const [sort, order] = sortValue.split('-');
 
@@ -31,17 +63,7 @@ export default function Products() {
     staleTime: 1000 * 60 * 30, // 30 minutes - categories change rarely
   });
 
-  const setFilter = useCallback((key, value) => {
-    setFilters((f) => ({ ...f, [key]: value, page: 1 }));
-  }, []);
 
-  const clearFilter = useCallback((key) => {
-    setFilters((f) => {
-      const n = { ...f };
-      delete n[key];
-      return { ...n, page: 1 };
-    });
-  }, []);
 
   const pageNumbers = data?.meta?.totalPages > 1
     ? Array.from({ length: data.meta.totalPages }, (_, i) => i + 1)
@@ -62,25 +84,92 @@ export default function Products() {
         </div>
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8 mb-8 sm:mb-12">
-          <div className="space-y-2 sm:space-y-4">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-brand-primary leading-tight">
-              All <br />
-              <span className="text-brand-secondary">Products</span>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 sm:mb-12">
+          {/* Title and stats */}
+          <div className="space-y-2 shrink-0">
+            <h1 className="text-3xl sm:text-4xl font-bold text-brand-primary leading-tight">
+              All <span className="text-brand-secondary">Products</span>
             </h1>
             <div className="flex items-center gap-4">
-              <div className="h-0.5 w-12 bg-brand-secondary" />
+              <div className="h-0.5 w-8 bg-brand-secondary" />
               <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">{data?.meta?.total || 0} premium items available</p>
             </div>
           </div>
 
-          <select
-            value={sortValue}
-            onChange={(e) => setSortValue(e.target.value)}
-            className="px-6 py-3 rounded-pill border border-cream-200 bg-white text-brand-primary font-semibold text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-          >
-            {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          {/* Search bar (pill shape with gold border) */}
+          <div className="flex-1 max-w-lg xl:max-w-xl relative group">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search for trophies, corporate gifts, mementos..."
+              className="w-full pl-6 pr-12 py-3 sm:py-3.5 rounded-full border-2 border-brand-secondary/35 bg-white text-brand-primary font-medium text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/15 transition-all shadow-[0_4px_16px_rgba(91,63,47,0.04)]"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <Search className="w-4 h-4 text-brand-secondary shrink-0" />
+            </div>
+          </div>
+
+          {/* Sort selection */}
+          <div className="shrink-0 w-full md:w-auto flex items-center gap-3 relative animate-in fade-in duration-300">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-full border border-cream-200 bg-white text-brand-primary font-semibold text-xs uppercase tracking-wider cursor-pointer transition-all hover:bg-cream-50"
+            >
+              <SlidersHorizontal className="w-4 h-4" /> Filters
+            </button>
+            
+            <div className="relative flex-1 md:flex-none">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="w-full md:w-56 px-6 py-3.5 flex items-center justify-between rounded-full border-2 border-brand-secondary/35 bg-white text-brand-primary font-bold text-xs uppercase tracking-wider focus:outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/15 transition-all shadow-[0_4px_16px_rgba(91,63,47,0.04)] cursor-pointer"
+              >
+                <span>{SORT_OPTIONS.find(o => o.value === sortValue)?.label}</span>
+                <span className={`transition-transform duration-200 text-[10px] shrink-0 text-brand-secondary ${showSortDropdown ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              
+              {showSortDropdown && (
+                <>
+                  {/* Backdrop overlay to close when clicking outside */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowSortDropdown(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-56 bg-[#fffdfb] border border-brand-secondary/25 rounded-2xl shadow-[0_10px_30px_rgba(91,63,47,0.15)] py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                    {SORT_OPTIONS.map((o) => {
+                      const isSelected = o.value === sortValue;
+                      return (
+                        <button
+                          key={o.value}
+                          onClick={() => {
+                            setSortValue(o.value);
+                            setShowSortDropdown(false);
+                          }}
+                          className={`w-full text-left px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-brand-primary text-white'
+                              : 'text-brand-primary hover:bg-brand-surface hover:text-brand-secondary'
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
@@ -168,9 +257,15 @@ export default function Products() {
                 </div>
                 <h3 className="text-2xl font-bold text-brand-primary mb-3">No Products Found</h3>
                 <p className="text-gray-500 text-sm mb-10 max-w-sm mx-auto font-medium leading-relaxed">Try adjusting your filters or browse our categories to find what you're looking for.</p>
-                <Link to="/products" className="inline-flex items-center gap-2 px-10 py-4 rounded-pill bg-brand-primary text-white font-bold text-xs uppercase tracking-widest hover:bg-brand-deep transition-all shadow-lg hover:shadow-brand-primary/20">
+                <button
+                  onClick={() => {
+                    setFilters({ page: 1, limit: 20 });
+                    setSearchInput('');
+                  }}
+                  className="inline-flex items-center gap-2 px-10 py-4 rounded-pill bg-brand-primary text-white font-bold text-xs uppercase tracking-widest hover:bg-brand-deep transition-all shadow-lg hover:shadow-brand-primary/20 cursor-pointer"
+                >
                   Clear Filters <ChevronRight className="w-4 h-4" />
-                </Link>
+                </button>
               </div>
             </div>
           ) : (
