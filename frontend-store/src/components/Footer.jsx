@@ -88,7 +88,7 @@ export default function Footer() {
               <li className="flex items-start gap-2 text-[#d7c4b0] text-sm">
                 <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  <b>DADJI KI FACTORY</b><br />
+                  <b>DADAJI KI FACTORY</b><br />
                   WARD NO. 04, KUMAWAT COLONY,<br />
                   SITHAL ROAD, TEHSIL - GUDHA GORJI,<br />
                   Chhaosari, Jhunjhunu, Rajasthan - 333012

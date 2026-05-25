@@ -75,7 +75,7 @@ export default function BulkOrders() {
                   <div className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center shrink-0 mt-0.5">
                     <MapPin className="w-4 h-4 text-brand-secondary" />
                   </div>
-                  <span className="text-sm font-semibold leading-relaxed">DADJI KI FACTORY, Jhunjhunu, Rajasthan</span>
+                  <span className="text-sm font-semibold leading-relaxed">DADAJI KI FACTORY, Jhunjhunu, Rajasthan</span>
                 </div>
               </div>
             </div>
