@@ -1,4 +1,4 @@
-import * as ShipingTech from '../services/shipingtech.service.js';
+import * as ShipingTech from '../services/shiprocket.service.js';
 import prisma from '../lib/prisma.js';
 import { createError } from '../middleware/errorHandler.js';
 
@@ -37,7 +37,7 @@ export const getShippingRates = async (req, res) => {
 
 export const shippingHealth = async (req, res) => {
   try {
-    console.log('[Shipping] Initiating ShipingTech integration health check...');
+    console.log('[Shipping] Initiating Shiprocket integration health check...');
     const token = await ShipingTech.getToken();
     const ok = Boolean(token);
     console.log('[Shipping] Health check result:', ok ? 'SUCCESS' : 'FAILED');
@@ -264,5 +264,54 @@ export const getRatesForOrder = async (req, res, next) => {
     return res.status(200).json({ success: true, rates: sorted });
   } catch (err) {
     return next(err);
+  }
+};
+
+export const webhookCallback = async (req, res) => {
+  try {
+    const webhookToken = process.env.SHIPROCKET_WEBHOOK_TOKEN;
+    const apiKey = req.headers['x-api-key'] || req.headers['anx-api-key'] || req.headers['x-api-token'];
+    
+    if (webhookToken && apiKey !== webhookToken) {
+      console.warn('[Shipping Webhook] Unauthorized attempt. Given token:', apiKey);
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { order_id, awb, current_status } = req.body;
+    console.log(`[Shipping Webhook] Received tracking update for Order: ${order_id}, AWB: ${awb}, Status: ${current_status}`);
+
+    if (!order_id && !awb) {
+      return res.status(200).json({ success: false, message: 'No identifying keys present' });
+    }
+
+    // Search order by order_id (custom channel order id) or AWB number
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id: order_id || undefined },
+          { awbNumber: awb || undefined }
+        ].filter((o) => o !== undefined)
+      }
+    });
+
+    if (!order) {
+      console.warn('[Shipping Webhook] Order not found for:', { order_id, awb });
+      return res.status(200).json({ success: false, message: 'Order not found' });
+    }
+
+    // Update order details
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        shippingStatus: current_status ? String(current_status).toUpperCase().replace(/\s+/g, '_') : order.shippingStatus,
+        awbNumber: awb || order.awbNumber,
+      }
+    });
+
+    console.log(`[Shipping Webhook] Order ${order.id} status updated to:`, current_status);
+    return res.status(200).json({ success: true, message: 'Order status updated' });
+  } catch (err) {
+    console.error('[Shipping Webhook] Error processing webhook:', err.message);
+    return res.status(200).json({ success: false, error: err.message });
   }
 };

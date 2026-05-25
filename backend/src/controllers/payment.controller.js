@@ -7,7 +7,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import valkey from '../lib/valkey.js';
 import { saveOrderToDB } from '../services/orderService.js';
 import { broadcastToAdmins } from '../services/notificationService.js';
-import * as ShipingTech from '../services/shipingtech.service.js';
+import * as ShipingTech from '../services/shiprocket.service.js';
 
 async function autoCreateShipment(orderId) {
   try {

@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.post('/rates', authenticate, ShippingController.getShippingRates);
 router.get('/track/:orderId', authenticate, ShippingController.trackShipment);
+router.post('/callback', ShippingController.webhookCallback);
 
 const adminOnly = [authenticate, requireRole(['ADMIN', 'SUPER_ADMIN'])];
 
