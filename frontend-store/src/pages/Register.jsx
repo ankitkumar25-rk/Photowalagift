@@ -2,19 +2,23 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader } from 'lucide-react';
 import { brandAssets } from '../data/assets';
+import { apiClient } from '../api/client';
 import CompleteProfileModal from '../components/CompleteProfileModal';
 
 export default function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', otp: '' });
   const [showPw, setShowPw] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const register = useAuthStore((s) => s.register);
-  const isLoading = useAuthStore((s) => s.isLoading);
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const setAuthToken = useAuthStore((s) => s.setAuthToken);
+  const setUser = useAuthStore((s) => s.setUser);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
@@ -31,22 +35,47 @@ export default function Register() {
     return score;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (form.password.length < 8) return toast.error('Password must be at least 8 characters');
-    const trimmedForm = {
-      ...form,
-      name: form.name.trim(),
-      email: form.email.trim().toLowerCase(),
-    };
+    if (!form.email) return toast.error('Please enter your email');
+    
+    setSendingOtp(true);
     try {
-      await register(trimmedForm);
-      setCurrentUser(trimmedForm);
-      setRegisteredEmail(trimmedForm.email);
-      setShowProfileModal(true);
-      toast.success("Account created! Let's complete your profile.");
+      await apiClient.post('/auth/send-otp', { email: form.email.trim().toLowerCase() });
+      setOtpSent(true);
+      setRegisteredEmail(form.email.trim().toLowerCase());
+      toast.success('OTP sent to your email! Valid for 10 minutes.');
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Registration failed. Please try again.');
+      toast.error(err?.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!form.otp || form.otp.length !== 6) return toast.error('Please enter a 6-digit OTP');
+    if (form.password.length < 8) return toast.error('Password must be at least 8 characters');
+    if (!form.name.trim()) return toast.error('Please enter your name');
+
+    setSubmitting(true);
+    try {
+      const { data } = await apiClient.post('/auth/verify-otp', {
+        email: form.email.trim().toLowerCase(),
+        otp: form.otp,
+        name: form.name.trim(),
+        password: form.password,
+      });
+
+      if (data.data?.user) {
+        setCurrentUser(data.data.user);
+        setShowProfileModal(true);
+        toast.success('Account created! Complete your profile.');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Verification failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -125,73 +154,142 @@ export default function Register() {
                 <div className="relative flex justify-center text-xs text-gray-400 bg-white px-3 mx-auto w-fit">or register with email</div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
-                  <input id="reg-name" type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" placeholder="Priya Sharma" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
-                  <input id="reg-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field" placeholder="you@example.com" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
-                  <div className="relative">
-                    <input
-                      id="reg-password"
-                      type={showPw ? 'text' : 'password'}
-                      required
-                      minLength={8}
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="input-field pr-12"
-                      placeholder="Min. 8 characters"
+              {!otpSent ? (
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+                    <input 
+                      id="reg-email" 
+                      type="email" 
+                      required 
+                      value={form.email} 
+                      onChange={(e) => setForm({ ...form, email: e.target.value })} 
+                      className="input-field" 
+                      placeholder="you@example.com" 
                     />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={sendingOtp} 
+                    className="btn-primary w-full justify-center text-base py-3.5 mt-4 flex items-center gap-2"
+                  >
+                    {sendingOtp && <Loader className="w-4 h-4 animate-spin" />}
+                    {sendingOtp ? 'Sending OTP...' : 'Send OTP to Email'}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+                    <input 
+                      type="email" 
+                      disabled 
+                      value={form.email}
+                      className="input-field bg-gray-50 cursor-not-allowed" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">OTP (from your email)</label>
+                    <input 
+                      type="text" 
+                      required 
+                      maxLength="6"
+                      placeholder="000000"
+                      value={form.otp} 
+                      onChange={(e) => setForm({ ...form, otp: e.target.value.replace(/\D/g, '') })} 
+                      className="input-field font-mono text-center text-lg tracking-widest" 
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Valid for 10 minutes</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
+                    <input 
+                      id="reg-name" 
+                      type="text" 
+                      required 
+                      value={form.name} 
+                      onChange={(e) => setForm({ ...form, name: e.target.value })} 
+                      className="input-field" 
+                      placeholder="Priya Sharma" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                    <div className="relative">
+                      <input
+                        id="reg-password"
+                        type={showPw ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        className="input-field pr-12"
+                        placeholder="Min. 8 characters"
+                      />
+                      <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    
+                    {/* Password strength meter */}
+                    {form.password && (
+                      <div className="mt-2 space-y-1.5">
+                        <div className="flex justify-between items-center px-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Security Strength</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                            getPasswordStrength(form.password) <= 1 ? 'text-red-500' : 
+                            getPasswordStrength(form.password) <= 2 ? 'text-amber-500' : 
+                            'text-green-600'
+                          }`}>
+                            {getPasswordStrength(form.password) <= 1 ? 'Weak' : 
+                             getPasswordStrength(form.password) <= 2 ? 'Good' : 
+                             'Strong'}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden flex gap-1">
+                          {[1, 2, 3, 4].map((level) => (
+                            <div 
+                              key={level}
+                              className={`h-full flex-1 transition-all duration-500 ${
+                                level <= getPasswordStrength(form.password) 
+                                  ? (getPasswordStrength(form.password) <= 1 ? 'bg-red-500' : 
+                                     getPasswordStrength(form.password) <= 2 ? 'bg-amber-500' : 
+                                     'bg-green-600')
+                                  : 'bg-gray-100'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-tight">
+                          Use 8+ characters with mixed case, numbers & symbols.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setOtpSent(false)}
+                      className="btn-secondary w-full justify-center py-3 mt-2"
+                    >
+                      Back
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={submitting} 
+                      className="btn-primary w-full justify-center text-base py-3 mt-2 flex items-center gap-2 justify-center"
+                    >
+                      {submitting && <Loader className="w-4 h-4 animate-spin" />}
+                      {submitting ? 'Creating Account...' : 'Create Account'}
                     </button>
                   </div>
-                  
-                  {/* Password strength meter */}
-                  {form.password && (
-                    <div className="mt-2 space-y-1.5">
-                      <div className="flex justify-between items-center px-0.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Security Strength</span>
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                          getPasswordStrength(form.password) <= 1 ? 'text-red-500' : 
-                          getPasswordStrength(form.password) <= 2 ? 'text-amber-500' : 
-                          'text-green-600'
-                        }`}>
-                          {getPasswordStrength(form.password) <= 1 ? 'Weak' : 
-                           getPasswordStrength(form.password) <= 2 ? 'Good' : 
-                           'Strong'}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden flex gap-1">
-                        {[1, 2, 3, 4].map((level) => (
-                          <div 
-                            key={level}
-                            className={`h-full flex-1 transition-all duration-500 ${
-                              level <= getPasswordStrength(form.password) 
-                                ? (getPasswordStrength(form.password) <= 1 ? 'bg-red-500' : 
-                                   getPasswordStrength(form.password) <= 2 ? 'bg-amber-500' : 
-                                   'bg-green-600')
-                                : 'bg-gray-100'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-gray-400 leading-tight">
-                        Use 8+ characters with mixed case, numbers & symbols.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <button type="submit" disabled={isLoading} className="btn-primary w-full justify-center text-base py-3.5 mt-2" id="register-submit-btn">
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </button>
-              </form>
+                </form>
+              )}
 
               <p className="text-center text-sm text-gray-500 mt-6">
                 Already have an account?{' '}

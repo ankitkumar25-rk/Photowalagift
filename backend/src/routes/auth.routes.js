@@ -35,6 +35,8 @@ router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
 router.post('/reset-password',  authRateLimiter, authController.resetPassword);
 router.post('/verify-email',     authRateLimiter, authController.verifyEmail);
 router.post('/resend-verification', authRateLimiter, authController.resendVerificationEmail);
+router.post('/send-otp',       registrationRateLimiter, authController.sendOTP);
+router.post('/verify-otp',     registrationRateLimiter, authController.verifyOTP);
 
 if (googleConfigured) {
   router.get('/google', (req, res, next) => {

@@ -156,6 +156,18 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
+model EmailOTP {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("email_otps")
+  @@index([email])
+}
+
 model PasswordResetToken {
   id        String   @id @default(uuid())
   token     String   @unique

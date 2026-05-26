@@ -345,3 +345,100 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
     message: 'Verification email sent. Please check your inbox.',
   });
 });
+
+// Generate 6-digit OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+export const sendOTP = asyncHandler(async (req, res) => {
+  const { email } = z.object({ email: z.string().email() }).parse(req.body);
+  const normalizedEmail = email.toLowerCase();
+
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (existingUser) throw createError('Email already registered', 409);
+
+  // Invalidate old OTPs for this email
+  await prisma.emailOTP.updateMany({
+    where: { email: normalizedEmail, used: false },
+    data: { used: true },
+  });
+
+  // Generate and save new OTP (valid for 10 minutes)
+  const otp = generateOTP();
+  await prisma.emailOTP.create({
+    data: {
+      email: normalizedEmail,
+      otp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    },
+  });
+
+  // Send OTP email
+  const { emailService } = await import('../services/email.service.js');
+  await emailService.sendOtpEmail({ to: normalizedEmail, userName: 'User', otp });
+
+  res.json({
+    success: true,
+    message: `OTP sent to ${normalizedEmail}. Valid for 10 minutes.`,
+  });
+});
+
+export const verifyOTP = asyncHandler(async (req, res) => {
+  const { email, otp, name, password } = z.object({
+    email: z.string().email(),
+    otp: z.string().length(6).regex(/^\d+$/),
+    name: z.string().min(2).max(100),
+    password: z.string().min(8).max(128),
+  }).parse(req.body);
+
+  const normalizedEmail = email.toLowerCase();
+
+  // Find valid OTP
+  const otpRecord = await prisma.emailOTP.findFirst({
+    where: {
+      email: normalizedEmail,
+      otp,
+      used: false,
+      expiresAt: { gt: new Date() },
+    },
+  });
+
+  if (!otpRecord) throw createError('Invalid or expired OTP', 400);
+
+  // Mark OTP as used
+  await prisma.emailOTP.update({
+    where: { id: otpRecord.id },
+    data: { used: true },
+  });
+
+  // Create user
+  const exists = await prisma.user.findFirst({ where: { email: normalizedEmail } });
+  if (exists) throw createError('Email already registered', 409);
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const user = await prisma.user.create({
+    data: {
+      name: name.trim(),
+      email: normalizedEmail,
+      passwordHash,
+      isEmailVerified: true, // Auto-verify since OTP was verified
+    },
+  });
+
+  // Issue tokens
+  const { accessToken, refreshToken } = await issueTokens(user);
+
+  // Set cookies
+  res.cookie('accessToken', accessToken, COOKIE_OPTS);
+  res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTS);
+
+  res.status(201).json({
+    success: true,
+    message: 'Account created and verified successfully!',
+    data: {
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    },
+  });
+});
