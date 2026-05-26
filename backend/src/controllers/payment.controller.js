@@ -2,7 +2,9 @@ import crypto from 'crypto';
 import prisma from '../lib/prisma.js';
 import razorpay from '../config/razorpay.js';
 import { createError } from '../middleware/errorHandler.js';
-import { sendEmail, emailTemplates } from '../config/email.js';
+import { sendMail } from '../lib/mailer.js';
+import { emailTemplates } from '../config/email.js';
+import { emailService } from '../services/email.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import valkey from '../lib/valkey.js';
 import { saveOrderToDB } from '../services/orderService.js';
@@ -439,12 +441,19 @@ export const confirmCOD = asyncHandler(async (req, res) => {
       const tpl = emailTemplates.orderConfirmation(order, user);
       const adminTpl = emailTemplates.adminNewOrder(order, user);
       
-      sendEmail({ to: user.email, ...tpl }).catch(console.error);
-      sendEmail({ to: adminEmail, ...adminTpl }).catch(console.error);
+      sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
+      sendMail({ to: adminEmail, subject: adminTpl.subject, html: adminTpl.html }).catch(console.error);
+      
+      // Send admin transaction notification
+      emailService.sendAdminTransactionNotification({
+        order,
+        user,
+        transactionType: 'ORDER_PAID'
+      }).catch(err => console.error('[Transaction Email] Failed:', err.message));
     } else {
       const serviceOrder = await prisma.serviceOrder.findUnique({ where: { id: internalOrderId } });
       const adminTpl = emailTemplates.adminNewServiceRequest(serviceOrder, user);
-      sendEmail({ to: adminEmail, ...adminTpl }).catch(console.error);
+      sendMail({ to: adminEmail, subject: adminTpl.subject, html: adminTpl.html }).catch(console.error);
     }
   } catch (err) {
     console.error('[payment] Failed to send COD notification:', err.message);

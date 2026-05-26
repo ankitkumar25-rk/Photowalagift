@@ -150,5 +150,73 @@ export const emailService = {
       subject: "Welcome to PhotowalaGift!",
       html: baseTemplate(content),
     });
+  },
+
+  async sendAdminTransactionNotification({ order, user, transactionType = 'ORDER_CREATED' }) {
+    const adminEmail = process.env.ADMIN_EMAIL || 'photowalagiftphotowalagift@gmail.com';
+    
+    const typeLabel = {
+      ORDER_CREATED: '📦 New Order Created',
+      ORDER_PAID: '✅ Order Payment Received',
+      ORDER_SHIPPED: '🚚 Order Shipped',
+      ORDER_RETURNED: '↩️ Order Return Initiated',
+      ORDER_CANCELLED: '❌ Order Cancelled',
+    }[transactionType] || '🔔 Transaction Update';
+
+    const itemsHtml = (order.items || []).map(item => `
+      <li style="padding: 8px 0; border-bottom: 1px solid #eeeeee;">
+        <strong>${item.name}</strong> (Qty: ${item.qty}) — ₹${item.price}
+      </li>
+    `).join('');
+
+    const content = `
+      <h2 style="color: #e74c3c; margin-bottom: 20px;">${typeLabel}</h2>
+      <p><strong>New Transaction Alert:</strong></p>
+      
+      <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+        <p style="margin: 0; color: #856404;"><strong>⚡ Timestamp:</strong> ${new Date().toLocaleString()}</p>
+      </div>
+
+      <div style="border: 1px solid #eeeeee; border-radius: 8px; padding: 20px; margin-top: 20px;">
+        <h3 style="color: #333; margin-top: 0;">Customer Details</h3>
+        <p style="margin: 5px 0;"><strong>Name:</strong> ${user.name}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
+        <p style="margin: 5px 0;"><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+      </div>
+
+      <div style="border: 1px solid #eeeeee; border-radius: 8px; padding: 20px; margin-top: 20px;">
+        <h3 style="color: #333; margin-top: 0;">Order Information</h3>
+        <p style="margin: 5px 0;"><strong>Order ID:</strong> #${order.orderNumber || order.id}</p>
+        <p style="margin: 5px 0;"><strong>Total Amount:</strong> <span style="color: ${BRAND_COLOR}; font-size: 18px;">₹${order.total}</span></p>
+        <p style="margin: 5px 0;"><strong>Items Count:</strong> ${order.items?.length || 0}</p>
+        <p style="margin: 5px 0;"><strong>Payment Status:</strong> <strong style="color: ${order.paymentStatus === 'PAID' ? '#27ae60' : '#e74c3c'};">${order.paymentStatus || 'PENDING'}</strong></p>
+      </div>
+
+      <div style="border: 1px solid #eeeeee; border-radius: 8px; padding: 20px; margin-top: 20px;">
+        <h3 style="color: #333; margin-top: 0;">Items</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          ${itemsHtml}
+        </ul>
+      </div>
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="${process.env.ADMIN_URL || '#'}/orders/${order.id}" style="background-color: #e74c3c; color: #ffffff; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);">
+          View in Admin Dashboard
+        </a>
+      </div>
+
+      <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">This is an automated notification. Please review this transaction in your admin panel.</p>
+    `;
+
+    try {
+      return await sendMail({
+        to: adminEmail,
+        subject: `${typeLabel} | PhotowalaGift Admin`,
+        html: baseTemplate(content),
+      });
+    } catch (err) {
+      console.error('Failed to send admin transaction notification:', err);
+      throw err;
+    }
   }
 };

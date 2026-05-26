@@ -2,7 +2,8 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import prisma from '../lib/prisma.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../config/paseto.js';
-import { sendEmail, emailTemplates } from '../config/email.js';
+import { sendMail } from '../lib/mailer.js';
+import { emailTemplates } from '../config/email.js';
 import { createError } from '../middleware/errorHandler.js';
 import { z } from 'zod';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -24,7 +25,6 @@ const registerSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email(),
   password: z.string().min(8).max(128),
-  phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
 });
 
 const loginSchema = z.object({
@@ -55,7 +55,7 @@ async function issueTokens(user) {
 }
 
 export const register = asyncHandler(async (req, res) => {
-  let { name, email, password, phone } = registerSchema.parse(req.body);
+  let { name, email, password } = registerSchema.parse(req.body);
   email = email.trim().toLowerCase();
   name = name.trim();
 
@@ -64,24 +64,31 @@ export const register = asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash, phone },
+    data: { name, email, passwordHash },
   });
 
-  const { accessToken, refreshToken } = await issueTokens(user);
+  // Generate email verification token (valid for 24 hours)
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  
+  await prisma.emailVerificationToken.create({
+    data: {
+      token: hashedToken,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+  });
 
-  const tpl = emailTemplates.welcomeEmail(user);
-  sendEmail({ to: user.email, ...tpl }).catch(console.error);
-
-  res.cookie('access_token', accessToken, COOKIE_OPTS);
-  res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+  // Send verification email
+  const verificationLink = `${process.env.CLIENT_URL}verify-email?token=${verificationToken}&email=${email}`;
+  const tpl = emailTemplates.emailVerification(user, verificationLink);
+  sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
 
   res.status(201).json({
     success: true,
-    message: 'Account created successfully',
+    message: 'Account created! Please check your email to verify your account.',
     data: { 
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
-      accessToken,
-      refreshToken
     },
   });
 });
@@ -175,7 +182,7 @@ export const getMe = asyncHandler(async (req, res) => {
   if (!user) throw createError('User not found', 404);
   res.json({ 
     success: true, 
-    user: { id: user.id, name: user.name, email: user.email, role: user.role, avatarUrl: user.avatarUrl } 
+    user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, avatarUrl: user.avatarUrl } 
   });
 });
 
@@ -197,7 +204,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
   const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
   const tpl = emailTemplates.passwordReset(user, resetUrl);
-  await sendEmail({ to: user.email, ...tpl });
+  await sendMail({ to: user.email, subject: tpl.subject, html: tpl.html });
 
   res.json({ success: true, message: 'If that email exists, a reset link was sent.' });
 });
@@ -239,4 +246,102 @@ export const googleCallback = asyncHandler(async (req, res) => {
   const redirectUrl = `${clientUrl}/auth/success?access_token=${encodedAccessToken}&refresh_token=${encodedRefreshToken}&success=true&redirect=${encodedState}`;
   
   res.redirect(redirectUrl);
+});
+
+export const verifyEmail = asyncHandler(async (req, res) => {
+  const { token, email } = req.body;
+  
+  if (!token || !email) {
+    throw createError('Token and email are required', 400);
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  
+  // Find and verify the token
+  const verificationToken = await prisma.emailVerificationToken.findFirst({
+    where: {
+      token: hashedToken,
+      user: { email: email.toLowerCase() },
+      used: false,
+      expiresAt: { gt: new Date() }, // Token not expired
+    },
+    include: { user: true },
+  });
+
+  if (!verificationToken) {
+    throw createError('Invalid or expired verification token', 400);
+  }
+
+  // Update user as verified and mark token as used
+  const user = await prisma.user.update({
+    where: { id: verificationToken.userId },
+    data: { isEmailVerified: true },
+  });
+
+  await prisma.emailVerificationToken.update({
+    where: { id: verificationToken.id },
+    data: { used: true },
+  });
+
+  // Issue tokens for auto login
+  const { accessToken, refreshToken } = await issueTokens(user);
+
+  res.cookie('access_token', accessToken, COOKIE_OPTS);
+  res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+
+  res.json({
+    success: true,
+    message: 'Email verified successfully! You are now logged in.',
+    data: {
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      accessToken,
+      refreshToken,
+    },
+  });
+});
+
+export const resendVerificationEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    throw createError('Email is required', 400);
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  
+  if (!user) {
+    throw createError('User not found', 404);
+  }
+
+  if (user.isEmailVerified) {
+    throw createError('Email is already verified', 400);
+  }
+
+  // Invalidate old tokens
+  await prisma.emailVerificationToken.updateMany({
+    where: { userId: user.id, used: false },
+    data: { used: true },
+  });
+
+  // Generate new verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  
+  await prisma.emailVerificationToken.create({
+    data: {
+      token: hashedToken,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+  });
+
+  // Send verification email
+  const verificationLink = `${process.env.CLIENT_URL}verify-email?token=${verificationToken}&email=${email}`;
+  const tpl = emailTemplates.emailVerification(user, verificationLink);
+  sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
+
+  res.json({
+    success: true,
+    message: 'Verification email sent. Please check your inbox.',
+  });
 });

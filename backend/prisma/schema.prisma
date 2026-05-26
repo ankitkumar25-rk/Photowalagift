@@ -89,6 +89,7 @@ model User {
   cart            Cart?
   wishlist        WishlistItem[]
   refreshTokens        RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[] @relation("EmailVerificationTokens")
   passwordResetTokens  PasswordResetToken[]
   returns              Return[]
   supportTickets       SupportTicket[]
@@ -141,6 +142,18 @@ model ServiceOrder {
   @@index([category])
   @@index([status])
   @@map("service_orders")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation("EmailVerificationTokens", fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("email_verification_tokens")
 }
 
 model PasswordResetToken {

@@ -24,6 +24,7 @@ const Account       = lazy(() => import('./pages/Account'));
 const Wishlist      = lazy(() => import('./pages/Wishlist'));
 const Login         = lazy(() => import('./pages/Login'));
 const Register      = lazy(() => import('./pages/Register'));
+const VerifyEmail   = lazy(() => import('./pages/VerifyEmail'));
 const Category      = lazy(() => import('./pages/Category'));
 const AuthSuccess   = lazy(() => import('./pages/AuthSuccess'));
 const TrackOrder    = lazy(() => import('./pages/TrackOrder'));
@@ -129,6 +130,7 @@ export default function App() {
                 <Route path="cart"          element={<ProtectedRoute><Cart /></ProtectedRoute>} />
                 <Route path="login"         element={<Login />} />
                 <Route path="register"      element={<Register />} />
+                <Route path="verify-email"  element={<VerifyEmail />} />
 
                 {/* Protected Routes */}
                 <Route path="checkout"  element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

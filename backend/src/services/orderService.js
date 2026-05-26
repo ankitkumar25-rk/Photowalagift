@@ -1,7 +1,9 @@
 import prisma from '../lib/prisma.js';
 import { createError } from '../middleware/errorHandler.js';
 import { broadcastToAdmins } from './notificationService.js';
-import { sendEmail, emailTemplates } from '../config/email.js';
+import { sendMail } from '../lib/mailer.js';
+import { emailTemplates } from '../config/email.js';
+import { emailService } from './email.service.js';
 
 function generateOrderNumber() {
   const ts = Date.now().toString(36).toUpperCase();
@@ -117,9 +119,16 @@ export const saveOrderToDB = async ({ userId, addressId, notes, paymentMethod, p
     const tpl = emailTemplates.orderConfirmation(order, userData);
     const adminTpl = emailTemplates.adminNewOrder(order, userData);
 
-    sendEmail({ to: user.email, ...tpl }).catch(console.error);
+    sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
     const adminEmail = process.env.COMPANY_EMAIL || process.env.EMAIL_FROM;
-    sendEmail({ to: adminEmail, ...adminTpl }).catch(console.error);
+    sendMail({ to: adminEmail, subject: adminTpl.subject, html: adminTpl.html }).catch(console.error);
+    
+    // Send admin transaction notification
+    emailService.sendAdminTransactionNotification({
+      order,
+      user: userData,
+      transactionType: paymentStatus === 'PAID' ? 'ORDER_PAID' : 'ORDER_CREATED'
+    }).catch(err => console.error('[Transaction Email] Failed:', err.message));
   } catch (emailErr) {
     console.error('[Email] Failed to process email templates:', emailErr.message);
   }

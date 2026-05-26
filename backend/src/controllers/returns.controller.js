@@ -1,7 +1,6 @@
 import prisma from '../lib/prisma.js';
 import { createError } from '../middleware/errorHandler.js';
 import { z } from 'zod';
-import { sendEmail, emailTemplates } from '../config/email.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 export const requestReturn = asyncHandler(async (req, res) => {

@@ -1,7 +1,5 @@
-import { Resend } from 'resend';
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = 'Photowala Gift <onboarding@resend.dev>';
+// Email configuration moved to mailer.js using Nodemailer
+const FROM = process.env.FROM_EMAIL || process.env.SMTP_USER || 'Photowala Gift';
 
 const SHARED_FOOTER = `
   <div style="
@@ -28,63 +26,8 @@ const SHARED_FOOTER = `
   </div>
 `;
 
-export async function sendEmail({ to, subject, html, text }) {
-  if (!resend) {
-    console.warn('[email] Skipping sendEmail: RESEND_API_KEY is not configured');
-    return { skipped: true };
-  }
+// sendEmail function removed - use sendMail from lib/mailer.js instead
 
-  const recipientList = Array.isArray(to) ? to : [to];
-
-  try {
-    const { data, error } = await resend.emails.send({
-      from: FROM,
-      to: recipientList,
-      subject,
-      html,
-      text,
-    });
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    const isSandboxError =
-      err.statusCode === 403 ||
-      err.name === 'validation_error' ||
-      String(err.message || '').includes('only send testing emails') ||
-      String(err.message || '').includes('verify a domain');
-
-    if (isSandboxError) {
-      console.warn('\n======================================================================');
-      console.warn('⚠️  [Resend Sandbox Limitation]');
-      console.warn('The registered Resend account is in sandbox mode. Email was not delivered.');
-      console.warn(`Recipient: ${recipientList.join(', ')}`);
-      console.warn(`Subject:   ${subject}`);
-      
-      // Extract links for easy copy-pasting/clicking in dev terminal
-      const links = [];
-      if (html) {
-        const hrefRegex = /href="([^"]+)"/g;
-        let match;
-        while ((match = hrefRegex.exec(html)) !== null) {
-          links.push(match[1]);
-        }
-      }
-      if (links.length > 0) {
-        console.warn('Extracted Action Links:');
-        links.forEach((link, idx) => console.warn(`  [${idx + 1}] ${link}`));
-      }
-      console.warn('======================================================================\n');
-
-      // Return a simulated success payload so the calling routes don't crash
-      return { simulated: true, id: 'simulated_resend_sandbox_id' };
-    }
-
-    console.error('Email send error:', err);
-    throw err;
-  }
-}
-
-// Pre-built email templates
 export const emailTemplates = {
   orderConfirmation: (order, user) => ({
     subject: `Order Confirmed #${order.orderNumber} 🎁`,
@@ -143,6 +86,39 @@ export const emailTemplates = {
     `,
   }),
 
+  emailVerification: (user, verificationLink) => ({
+    subject: 'Verify Your Email - Photowala Gift',
+    html: `
+      <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2e211c;">
+        <div style="background: #5a3f2f; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">Verify Your Email</h1>
+        </div>
+        <div style="padding: 40px; background: #fffdfb; border: 1px solid #f5e7d8; border-top: none; border-radius: 0 0 12px 12px;">
+          <h2 style="color: #5a3f2f; margin-top: 0;">Hi ${user.name}! 👋</h2>
+          <p>Welcome to Photowala Gift! Please verify your email address to complete your registration.</p>
+          
+          <div style="text-align: center; margin: 35px 0;">
+            <a href="${verificationLink}"
+               style="background: #b88a2f; color: white; padding: 14px 32px; text-decoration: none; border-radius: 30px; display: inline-block; font-weight: bold; box-shadow: 0 4px 12px rgba(184, 138, 47, 0.2);">
+              Verify Email Address
+            </a>
+          </div>
+          
+          <p style="color: #7a655c; font-size: 13px; text-align: center;">
+            Or copy and paste this link in your browser:<br>
+            <code style="word-break: break-all; color: #5a3f2f;">${verificationLink}</code>
+          </p>
+          
+          <p style="color: #7a655c; font-size: 13px; margin-top: 25px;">
+            This verification link will expire in 24 hours. If you didn't create this account, please ignore this email.
+          </p>
+          
+          ${SHARED_FOOTER}
+        </div>
+      </div>
+    `,
+  }),
+
   adminNewOrder: (order, user) => ({
     subject: `🚨 New Order Received #${order.orderNumber}`,
     html: `
@@ -180,6 +156,54 @@ export const emailTemplates = {
       </div>
     `,
   }),
+
+  adminTransaction: (order, user, transactionType) => {
+    const typeLabel = {
+      ORDER_CREATED: '📦 New Order Created',
+      ORDER_PAID: '✅ Order Payment Received',
+      ORDER_SHIPPED: '🚚 Order Shipped',
+      ORDER_RETURNED: '↩️ Order Return Initiated',
+      ORDER_CANCELLED: '❌ Order Cancelled',
+    }[transactionType] || '🔔 Transaction Update';
+
+    return {
+      subject: typeLabel,
+      html: `
+        <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2e211c; border: 2px solid #b88a2f;">
+          <div style="background: linear-gradient(135deg, #5a3f2f 0%, #7a5a47 100%); padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">${typeLabel}</h1>
+          </div>
+          <div style="padding: 30px; background: #fffdfb; border-radius: 0 0 8px 8px;">
+            <p style="margin: 0 0 20px 0; color: #7a655c; font-size: 14px;"><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+            
+            <div style="background: #f7f0e7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #b88a2f;">
+              <p style="margin: 8px 0;"><strong style="color: #5a3f2f;">Order Details:</strong></p>
+              <p style="margin: 5px 0;">📝 <strong>Order ID:</strong> #${order.orderNumber || order.id}</p>
+              <p style="margin: 5px 0;">💰 <strong>Amount:</strong> ₹${order.total}</p>
+              <p style="margin: 5px 0;">👤 <strong>Customer:</strong> ${user.name} (${user.email})</p>
+              <p style="margin: 5px 0;">📞 <strong>Contact:</strong> ${user.phone || 'N/A'}</p>
+              <p style="margin: 5px 0;">🛒 <strong>Items:</strong> ${order.items?.length || 0} item(s)</p>
+            </div>
+            
+            <div style="background: #e8f4f8; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #2196F3;">
+              <p style="margin: 0; color: #1565c0; font-size: 13px;">⚡ <strong>Action Required:</strong> Review this transaction in the admin panel</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px;">
+              <a href="${process.env.ADMIN_URL}/orders/${order.id}" 
+                 style="background: #b88a2f; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; box-shadow: 0 4px 8px rgba(184, 138, 47, 0.2);">
+                View in Admin Panel
+              </a>
+            </div>
+            
+            <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f5e7d8; text-align: center; color: #7a655c; font-size: 12px;">
+              © ${new Date().getFullYear()} PhotowalaGift. All transactions monitored.
+            </p>
+          </div>
+        </div>
+      `,
+    };
+  },
 
   passwordReset: (user, resetUrl) => ({
     subject: 'Reset Your Password - Photowala Gift',

@@ -22,6 +22,51 @@ export const updateProfile = asyncHandler(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
+export const completeProfile = asyncHandler(async (req, res) => {
+  const { phone, street, city, state, pincode, country } = z.object({
+    phone: z.string().regex(/^[0-9]{10}$/, 'Phone must be exactly 10 digits'),
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z.string().length(6, 'Pincode must be 6 digits').optional(),
+    country: z.string().default('India'),
+  }).parse(req.body);
+
+  // Update phone
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { phone },
+  });
+
+  // Create primary address if provided
+  if (street || city || state || pincode) {
+    await prisma.address.create({
+      data: {
+        userId: req.user.id,
+        label: 'Home',
+        fullName: user.name,
+        phone,
+        line1: street || '',
+        city: city || '',
+        state: state || '',
+        pincode: pincode || '',
+        isDefault: true,
+      },
+    });
+  }
+
+  res.json({ 
+    success: true, 
+    message: 'Profile completed successfully',
+    data: { 
+      id: user.id, 
+      name: user.name, 
+      email: user.email, 
+      phone: user.phone 
+    }
+  });
+});
+
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = z.object({
     currentPassword: z.string().min(1),

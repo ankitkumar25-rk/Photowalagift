@@ -16,7 +16,6 @@ const googleConfigured = Boolean(
 const validateRegistration = [
   body('name').notEmpty().withMessage('Name is required').trim(),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
-  body('phone').notEmpty().withMessage('Phone number is required').isLength({ min: 10, max: 10 }).withMessage('Phone must be exactly 10 digits'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   (req, res, next) => {
     const errors = validationResult(req);
@@ -34,6 +33,8 @@ router.post('/logout',        authenticate,    authController.logout);
 router.post('/refresh',                        authController.refresh);
 router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
 router.post('/reset-password',  authRateLimiter, authController.resetPassword);
+router.post('/verify-email',     authRateLimiter, authController.verifyEmail);
+router.post('/resend-verification', authRateLimiter, authController.resendVerificationEmail);
 
 if (googleConfigured) {
   router.get('/google', (req, res, next) => {

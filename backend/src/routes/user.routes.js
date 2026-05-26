@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get('/profile',             authenticate, userController.getProfile);
 router.put('/profile',             authenticate, userController.updateProfile);
+router.post('/complete-profile',   authenticate, userController.completeProfile);
 router.put('/change-password',     authenticate, userController.changePassword);
 
 import { body, validationResult } from 'express-validator';

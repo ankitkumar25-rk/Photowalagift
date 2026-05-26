@@ -3,7 +3,7 @@ import { broadcastToAdmins } from '../services/notificationService.js';
 
 import { createError } from '../middleware/errorHandler.js';
 import { z } from 'zod';
-import { sendEmail, emailTemplates } from '../config/email.js';
+import { emailTemplates } from '../config/email.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import valkey from '../lib/valkey.js';
 import crypto from 'crypto';

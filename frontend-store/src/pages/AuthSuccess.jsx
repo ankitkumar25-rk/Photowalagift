@@ -1,20 +1,25 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import toast from 'react-hot-toast';
 import { brandAssets } from '../data/assets';
+import CompleteProfileModal from '../components/CompleteProfileModal';
 
 // Landing page after Google OAuth redirect
 // Backend sets httpOnly cookies before redirecting here
 export default function AuthSuccess() {
   const navigate = useNavigate();
   const fetchMe = useAuthStore((s) => s.fetchMe);
+  const user = useAuthStore((s) => s.user);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [redirect, setRedirect] = useState('/');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlAccessToken = params.get('access_token') || params.get('accessToken');
     const urlRefreshToken = params.get('refresh_token') || params.get('refreshToken');
-    const redirect = params.get('redirect') || '/';
+    const urlRedirect = params.get('redirect') || '/';
+    setRedirect(urlRedirect);
     const storedAccessToken = localStorage.getItem('token');
     const storedRefreshToken = localStorage.getItem('refreshToken');
     const accessToken = urlAccessToken || storedAccessToken;
@@ -93,9 +98,18 @@ export default function AuthSuccess() {
     const attemptFetchMe = async () => {
       try {
         await fetchMe();
-        console.log('[Auth] fetchMe successful, redirecting to:', redirect);
-        toast.success('Signed in successfully!');
-        navigate(redirect, { replace: true });
+        console.log('[Auth] fetchMe successful');
+        
+        // Check if profile is complete (has phone number)
+        const currentUser = useAuthStore.getState().user;
+        if (!currentUser?.phone) {
+          console.log('[Auth] Profile incomplete - showing profile modal');
+          setShowProfileModal(true);
+        } else {
+          console.log('[Auth] Profile complete, redirecting to:', urlRedirect);
+          toast.success('Signed in successfully!');
+          navigate(urlRedirect, { replace: true });
+        }
       } catch (err) {
         retryCount++;
         console.error(`[Auth] fetchMe attempt ${retryCount} failed:`, err.message);
@@ -116,13 +130,30 @@ export default function AuthSuccess() {
     attemptFetchMe();
   }, [fetchMe, navigate]);
 
+  const handleProfileComplete = () => {
+    setShowProfileModal(false);
+    toast.success('Profile updated! Welcome to Photowala! 🎉');
+    navigate(redirect, { replace: true });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-cream-100">
-      <div className="flex flex-col items-center gap-4">
-        <img src={brandAssets.logo} alt="Loading..." className="h-12 w-auto animate-pulse" />
-        <p className="text-brand-primary font-semibold text-lg">Signing you in...</p>
+    <>
+      <div className="min-h-screen flex items-center justify-center bg-cream-100">
+        <div className="flex flex-col items-center gap-4">
+          <img src={brandAssets.logo} alt="Loading..." className="h-12 w-auto animate-pulse" />
+          <p className="text-brand-primary font-semibold text-lg">Signing you in...</p>
+        </div>
       </div>
-    </div>
+
+      {/* Profile Completion Modal for OAuth Users */}
+      {user && (
+        <CompleteProfileModal 
+          user={user}
+          isOpen={showProfileModal}
+          onComplete={handleProfileComplete}
+        />
+      )}
+    </>
   );
 }
 

@@ -35,7 +35,7 @@ A comprehensive and secure e-commerce platform specifically designed for selling
 
 ## ✨ Key Features
 
-- **Advanced Accounts**: Email/Password login, Google Social Login, Email Verification, and Password Recovery. Simple phone number registration (10-digit Indian format).
+- **Advanced Accounts**: Email/Password login, Google Social Login, Email Verification via SMTP (Resend), and Password Recovery.
 - **Catalog Management**: Hierarchical categories, dynamic product filtering (price, category), and smart sorting.
 - **Order Lifecycle**: Secure checkout, Razorpay integration, automated stock tracking, and webhook validation.
 - **Returns & Refunds**: End-to-end lifecycle management for order returns and automated refund processing.
