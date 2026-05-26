@@ -6,7 +6,8 @@ import prisma from './lib/prisma.js';
 const REQUIRED_ENV = [
   'DATABASE_URL',
   'VALKEY_URL',
-  'RESEND_API_KEY',
+  'SMTP_USER',
+  'SMTP_PASS',
   'RAZORPAY_KEY_ID',
   'RAZORPAY_KEY_SECRET',
   'PASETO_SECRET_KEY',
