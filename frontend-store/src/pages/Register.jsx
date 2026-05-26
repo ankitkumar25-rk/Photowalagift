@@ -268,18 +268,18 @@ export default function Register() {
                     )}
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 mt-6">
                     <button 
                       type="button"
                       onClick={() => setOtpSent(false)}
-                      className="btn-secondary w-full justify-center py-3 mt-2"
+                      className="btn-secondary flex-1 justify-center py-3.5 font-bold uppercase tracking-wider"
                     >
                       Back
                     </button>
                     <button 
                       type="submit" 
                       disabled={submitting} 
-                      className="btn-primary w-full justify-center text-base py-3 mt-2 flex items-center gap-2 justify-center"
+                      className="btn-primary flex-1 justify-center py-3.5 font-bold uppercase tracking-wider flex items-center gap-2 justify-center"
                     >
                       {submitting && <Loader className="w-4 h-4 animate-spin" />}
                       {submitting ? 'Creating Account...' : 'Create Account'}
