@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuthStore } from '../store';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Loader } from 'lucide-react';
 import { brandAssets } from '../data/assets';
-import { apiClient } from '../api/client';
+import api from '../api/client';
 import CompleteProfileModal from '../components/CompleteProfileModal';
 
 export default function Register() {
@@ -17,8 +16,6 @@ export default function Register() {
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const setAuthToken = useAuthStore((s) => s.setAuthToken);
-  const setUser = useAuthStore((s) => s.setUser);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
@@ -41,7 +38,7 @@ export default function Register() {
     
     setSendingOtp(true);
     try {
-      await apiClient.post('/auth/send-otp', { email: form.email.trim().toLowerCase() });
+      await api.post('/auth/send-otp', { email: form.email.trim().toLowerCase() });
       setOtpSent(true);
       setRegisteredEmail(form.email.trim().toLowerCase());
       toast.success('OTP sent to your email! Valid for 10 minutes.');
@@ -60,7 +57,7 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      const { data } = await apiClient.post('/auth/verify-otp', {
+      const { data } = await api.post('/auth/verify-otp', {
         email: form.email.trim().toLowerCase(),
         otp: form.otp,
         name: form.name.trim(),
