@@ -1,4 +1,35 @@
+import https from 'https';
 import valkey from '../lib/valkey.js';
+
+const fetchPincodeFromAPI = (pincode) => {
+  return new Promise((resolve, reject) => {
+    const req = https.get(`https://api.postalpincode.in/pincode/${pincode}`, { timeout: 5500 }, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`India Post API returned status ${res.statusCode}`));
+        return;
+      }
+
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (err) {
+          reject(new Error('Failed to parse JSON response'));
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+  });
+};
 
 export const getPincodeDetails = async (req, res, next) => {
   try {
@@ -23,24 +54,11 @@ export const getPincodeDetails = async (req, res, next) => {
       }
     } catch (cacheErr) {
       console.error('[Pincode Cache Error] Failed to read from Redis:', cacheErr.message);
-      // Fallback: do not fail request if Redis is down
     }
 
-    // 3. Cache miss -> Call India Post API with a 6-second timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
+    // 3. Cache miss -> Call India Post API using native https to bypass Undici DNS/IPv6 issues
     try {
-      const apiResponse = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (!apiResponse.ok) {
-        throw new Error(`India Post API returned status ${apiResponse.status}`);
-      }
-
-      const data = await apiResponse.json();
+      const data = await fetchPincodeFromAPI(pincode);
 
       // India Post API returns an array: [{ Status, PostOffice: [...] }]
       if (!Array.isArray(data) || data.length === 0) {
@@ -72,7 +90,6 @@ export const getPincodeDetails = async (req, res, next) => {
 
       return res.json(responseBody);
     } catch (apiErr) {
-      clearTimeout(timeoutId);
       console.error('[Pincode API Error] Failed to fetch pincode details:', apiErr.message);
 
       // If India Post API fails or times out, return 503
