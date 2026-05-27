@@ -62,7 +62,7 @@ function AddressCard({ addr, onEdit, onDelete, onSetDefault }) {
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-900 text-sm">{addr.label} — {addr.fullName}</p>
           <p className="text-sm text-gray-600 mt-0.5">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
-          <p className="text-sm text-gray-600">{addr.city}, {addr.state} —œ {addr.pincode}</p>
+          <p className="text-sm text-gray-600">{addr.city}, {addr.state} - {addr.pincode}</p>
           <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
             <Phone className="w-3 h-3" /> {addr.phone}
           </p>
@@ -95,9 +95,21 @@ function AddressCard({ addr, onEdit, onDelete, onSetDefault }) {
 }
 
 /* ── Address modal ── */
-function AddressModal({ addr, onClose, onSave }) {
+/* ── Inline Address Form ── */
+function AccountInlineAddressForm({ addr, onCancel, onSave }) {
+  const user = useAuthStore((s) => s.user);
   const [form, setForm] = useState(
-    addr || { label: 'Home', fullName: '', phone: '', line1: '', line2: '', city: '', state: '', pincode: '', isDefault: false }
+    addr || {
+      label: 'Home',
+      fullName: user?.name || '',
+      phone: user?.phone || '',
+      line1: user?.address || '',
+      line2: '',
+      city: user?.city || '',
+      state: user?.state || '',
+      pincode: user?.pincode || '',
+      isDefault: false
+    }
   );
   const [saving, setSaving] = useState(false);
   const [isValidAddress, setIsValidAddress] = useState(false);
@@ -136,9 +148,9 @@ function AddressModal({ addr, onClose, onSave }) {
       setForm(prev => ({
         ...prev,
         line1: place.formatted_address,
-        city: get('locality') || get('sublocality_level_1') || get('administrative_area_level_2'),
-        state: get('administrative_area_level_1'),
-        pincode: get('postal_code'),
+        city: get('locality') || get('sublocality_level_1') || get('administrative_area_level_2') || '',
+        state: get('administrative_area_level_1') || '',
+        pincode: get('postal_code') || '',
       }));
       setIsValidAddress(true);
     });
@@ -178,6 +190,10 @@ function AddressModal({ addr, onClose, onSave }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!form.phone || !/^[0-9]{10}$/.test(form.phone)) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
     setIsValidating(true);
     try {
       const { data: vData } = await api.post('/users/addresses/validate', {
@@ -211,175 +227,172 @@ function AddressModal({ addr, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
-        <div className="flex items-center justify-between p-6 border-b border-cream-200">
-          <h3 className="font-bold text-xl text-gray-900">
-            {addr ? 'Edit Address' : 'Add New Address'}
-          </h3>
-          <button onClick={onClose} className="btn-ghost p-2"><X className="w-5 h-5" /></button>
+    <div className="bg-white rounded-3xl border border-cream-200 p-6 sm:p-8 space-y-6 shadow-sm animate-in fade-in duration-300 max-w-xl mx-auto">
+      <h3 className="font-bold text-xl text-gray-900 border-b border-cream-200 pb-4">
+        {addr ? 'Edit Address' : 'Add New Address'}
+      </h3>
+      <form onSubmit={submit} className="space-y-6">
+        <div className="flex gap-2">
+          {['Home', 'Work', 'Other'].map((l) => (
+            <button
+              key={l} type="button"
+              onClick={() => setForm((f) => ({ ...f, label: l }))}
+              className={`flex-1 px-4 py-2 rounded-2xl text-xs font-bold border transition-all ${
+                form.label === l
+                  ? 'bg-brand-primary text-white border-brand-primary shadow-md'
+                  : 'bg-cream-100 border-transparent text-gray-700 hover:bg-cream-200'
+              }`}
+            >
+              {l}
+            </button>
+          ))}
         </div>
-        <form onSubmit={submit} className="p-6 space-y-4">
-          <div className="flex gap-2">
-            {['Home', 'Work', 'Other'].map((l) => (
-              <button
-                key={l} type="button"
-                onClick={() => setForm((f) => ({ ...f, label: l }))}
-                className={`px-4 py-1.5 rounded-full text-sm font-semibold border-2 transition-all ${
-                  form.label === l
-                    ? 'border-brand-secondary bg-brand-surface text-brand-primary'
-                    : 'border-cream-300 text-gray-500 hover:border-brand-secondary'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Full Name *</label>
+            <input name="fullName" value={form.fullName} onChange={handle} required className="input-field" placeholder="John Doe" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Full Name *</label>
-              <input name="fullName" value={form.fullName} onChange={handle} required className="input-field" placeholder="John Doe" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Phone *</label>
-              <input 
-                type="tel" 
-                name="phone" 
-                value={form.phone} 
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  if (val.length <= 10) setForm(f => ({ ...f, phone: val }));
-                }} 
-                required 
-                pattern="[0-9]{10}"
-                className="input-field" 
-                placeholder="10-digit mobile number" 
-              />
-            </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Phone *</label>
+            <input 
+              type="tel" 
+              name="phone" 
+              value={form.phone} 
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                if (val.length <= 10) setForm(f => ({ ...f, phone: val }));
+              }} 
+              required 
+              pattern="[0-9]{10}"
+              className="input-field" 
+              placeholder="10-digit mobile number" 
+            />
           </div>
+        </div>
 
+        <div className="relative">
+          <label className="block text-[10px] uppercase tracking-wider text-gray-500 mb-1 font-bold">
+            Address Line 1 *
+          </label>
           <div className="relative">
-            <label className="block text-[10px] uppercase tracking-wider text-gray-500 mb-1 font-bold">
-              Address Line 1 *
-            </label>
-            <div className="relative">
-              <input
-                ref={inputRef}
-                type="text"
-                name="line1"
-                value={form.line1}
-                onChange={handle}
-                placeholder={isLoaded ? "Start typing your address..." : "Flat, House no., Street, Area"}
-                autoComplete="off"
-                required
-                className={`w-full rounded-xl px-4 py-3 pr-10 border bg-white text-[#5b3f2f] placeholder-[#5b3f2f]/30 focus:outline-none focus:ring-2 transition-all duration-200 font-[DM_Sans] ${
-                  isValidAddress ? 'border-green-400 focus:ring-green-100' : 'border-[#f5e7d8] focus:ring-[#b88a2f]/20 focus:border-[#b88a2f]'
-                }`}
-              />
-              {isLoaded && (
-                <>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    {isValidAddress ? (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    ) : form.line1 ? (
-                      <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
-                    ) : null}
-                  </div>
-                </>
-              )}
-            </div>
-            {isLoaded && !isValidAddress && form.line1?.length > 3 && (
-              <p className="text-[10px] text-[#b88a2f] mt-1 flex items-center gap-1 italic">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                Select from suggestions for accurate delivery
+            <input
+              ref={inputRef}
+              type="text"
+              name="line1"
+              value={form.line1}
+              onChange={handle}
+              placeholder={isLoaded ? "Start typing your address..." : "Flat, House no., Street, Area"}
+              autoComplete="off"
+              required
+              className={`w-full rounded-xl px-4 py-3 pr-10 border bg-white text-[#5b3f2f] placeholder-[#5b3f2f]/30 focus:outline-none focus:ring-2 transition-all duration-200 font-[DM_Sans] ${
+                isValidAddress ? 'border-green-400 focus:ring-green-100' : 'border-[#f5e7d8] focus:ring-[#b88a2f]/20 focus:border-[#b88a2f]'
+              }`}
+            />
+            {isLoaded && (
+              <>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {isValidAddress ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : form.line1 ? (
+                    <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
+                  ) : null}
+                </div>
+              </>
+            )}
+          </div>
+          {isLoaded && !isValidAddress && form.line1?.length > 3 && (
+            <p className="text-[10px] text-[#b88a2f] mt-1 flex items-center gap-1 italic">
+              <AlertCircle className="w-3 h-3 flex-shrink-0" />
+              Select from suggestions for accurate delivery
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Address Line 2 (Optional)</label>
+          <input name="line2" value={form.line2} onChange={handle} className="input-field" placeholder="Flat, Floor, Building" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">City *</label>
+            <input name="city" value={form.city} onChange={handle} required className="input-field" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">State *</label>
+            <input name="state" value={form.state} onChange={handle} required className="input-field" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Pincode *</label>
+            <input name="pincode" value={form.pincode} onChange={handlePincodeChange} required className="input-field" maxLength="6" />
+            {pincodeError && (
+              <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {pincodeError}
               </p>
             )}
           </div>
+        </div>
 
-          <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Address Line 2 (Optional)</label>
-            <input name="line2" value={form.line2} onChange={handle} className="input-field" placeholder="Flat, Floor, Building" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">City *</label>
-              <input name="city" value={form.city} onChange={handle} required className="input-field" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">State *</label>
-              <input name="state" value={form.state} onChange={handle} required className="input-field" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Pincode *</label>
-              <input name="pincode" value={form.pincode} onChange={handlePincodeChange} required className="input-field" maxLength="6" />
-              {pincodeError && (
-                <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> {pincodeError}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isDefault}
-              onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
-              className="w-4 h-4 accent-brand-primary rounded"
-            />
-            <span className="text-sm font-medium text-gray-700">Set as default address</span>
-          </label>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1 justify-center">Cancel</button>
-            <button type="submit" disabled={saving || isValidating} className="btn-primary flex-1 justify-center">
-              {saving || isValidating ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  {isValidating ? 'Validating...' : 'Saving...'}
-                </div>
-              ) : 'Save Address'}
-            </button>
-          </div>
-        </form>
-
-        {showSuggestionModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center px-4">
-            <div className="bg-[#fffdfb] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
-              <h3 className="font-bold text-[#5b3f2f] text-lg mb-1">Suggested Address</h3>
-              <p className="text-xs text-[#5b3f2f]/60 mb-4">Google found a more accurate version of your address</p>
-              <div className="space-y-3 mb-6">
-                <div className="bg-[#f5e7d8] rounded-xl p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#5b3f2f]/50 mb-1">You entered</p>
-                  <p className="text-sm text-[#5b3f2f]">{form.line1}</p>
-                </div>
-                <div className="bg-[#b88a2f]/10 border border-[#b88a2f]/30 rounded-xl p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#b88a2f] mb-1">✓ Suggested</p>
-                  <p className="text-sm text-[#5b3f2f] font-medium">{suggestedAddress}</p>
-                </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isDefault}
+            onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
+            className="w-4 h-4 accent-brand-primary rounded"
+          />
+          <span className="text-sm font-medium text-gray-700">Set as default address</span>
+        </label>
+        
+        <div className="flex gap-3 pt-2">
+          <button type="button" onClick={onCancel} className="btn-secondary flex-1 justify-center rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider">Cancel</button>
+          <button type="submit" disabled={saving || isValidating} className="btn-primary flex-1 justify-center rounded-2xl py-3.5 text-xs font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/20">
+            {saving || isValidating ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {isValidating ? 'Validating...' : 'Saving...'}
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setShowSuggestionModal(false); performSave(); }}
-                  className="flex-1 border border-[#5b3f2f] text-[#5b3f2f] rounded-full py-2.5 text-sm font-semibold hover:bg-[#f5e7d8] transition-all duration-200"
-                >Keep Mine</button>
-                <button
-                  onClick={() => {
-                    const updated = { ...form, line1: suggestedAddress };
-                    setForm(updated);
-                    setShowSuggestionModal(false);
-                    performSave(updated);
-                  }}
-                  className="flex-1 bg-[#5b3f2f] text-white rounded-full py-2.5 text-sm font-semibold hover:bg-[#3b1d16] transition-all duration-200"
-                >Use Suggested</button>
+            ) : 'Save Address'}
+          </button>
+        </div>
+      </form>
+
+      {showSuggestionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center px-4">
+          <div className="bg-[#fffdfb] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="font-bold text-[#5b3f2f] text-lg mb-1">Suggested Address</h3>
+            <p className="text-xs text-[#5b3f2f]/60 mb-4">Google found a more accurate version of your address</p>
+            <div className="space-y-3 mb-6">
+              <div className="bg-[#f5e7d8] rounded-xl p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#5b3f2f]/50 mb-1">You entered</p>
+                <p className="text-sm text-[#5b3f2f]">{form.line1}</p>
+              </div>
+              <div className="bg-[#b88a2f]/10 border border-[#b88a2f]/30 rounded-xl p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#b88a2f] mb-1">✓ Suggested</p>
+                <p className="text-sm text-[#5b3f2f] font-medium">{suggestedAddress}</p>
               </div>
             </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowSuggestionModal(false); performSave(); }}
+                className="flex-1 border border-[#5b3f2f] text-[#5b3f2f] rounded-full py-2.5 text-sm font-semibold hover:bg-[#f5e7d8] transition-all duration-200"
+              >Keep Mine</button>
+              <button
+                onClick={() => {
+                  const updated = { ...form, line1: suggestedAddress };
+                  setForm(updated);
+                  setShowSuggestionModal(false);
+                  performSave(updated);
+                }}
+                className="flex-1 bg-[#5b3f2f] text-white rounded-full py-2.5 text-sm font-semibold hover:bg-[#3b1d16] transition-all duration-200"
+              >Use Suggested</button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 export default function Account() {
   const navigate = useNavigate();
@@ -694,34 +707,44 @@ export default function Account() {
         {/* ── ADDRESSES TAB ── */}
         {tab === 'addresses' && (
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-bold text-xl text-gray-900">
-                Saved Addresses
-              </h2>
-              <button onClick={() => setAddrModal('new')} className="btn-primary py-2 px-4 text-sm gap-1.5">
-                <Plus className="w-4 h-4" /> Add Address
-              </button>
-            </div>
-            {addresses.length === 0 ? (
-              <div className="card p-12 text-center">
-                <MapPin className="w-14 h-14 mx-auto mb-3 text-cream-50/80" />
-                <h3 className="font-bold text-gray-800 text-lg mb-1">No addresses saved</h3>
-                <p className="text-gray-500 text-sm mb-4">Add a delivery address to speed up checkout</p>
-                <button onClick={() => setAddrModal('new')} className="btn-primary">
-                  <Plus className="w-4 h-4" /> Add First Address
-                </button>
-              </div>
+            {addrModal ? (
+              <AccountInlineAddressForm
+                addr={typeof addrModal === 'object' ? addrModal : null}
+                onCancel={() => setAddrModal(null)}
+                onSave={saveAddress}
+              />
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {addresses.map((a) => (
-                  <AddressCard
-                    key={a.id}
-                    addr={a}
-                    onEdit={(a) => setAddrModal(a)}
-                    onDelete={deleteAddress}
-                    onSetDefault={setDefaultAddress}
-                  />
-                ))}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-bold text-xl text-gray-900">
+                    Saved Addresses
+                  </h2>
+                  <button onClick={() => setAddrModal('new')} className="btn-primary py-2 px-4 text-sm gap-1.5 rounded-2xl">
+                    <Plus className="w-4 h-4" /> Add Address
+                  </button>
+                </div>
+                {addresses.length === 0 ? (
+                  <div className="card p-12 text-center">
+                    <MapPin className="w-14 h-14 mx-auto mb-3 text-cream-50/80" />
+                    <h3 className="font-bold text-gray-800 text-lg mb-1">No addresses saved</h3>
+                    <p className="text-gray-500 text-sm mb-4">Add a delivery address to speed up checkout</p>
+                    <button onClick={() => setAddrModal('new')} className="btn-primary rounded-2xl">
+                      <Plus className="w-4 h-4" /> Add First Address
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-300">
+                    {addresses.map((a) => (
+                      <AddressCard
+                        key={a.id}
+                        addr={a}
+                        onEdit={(a) => setAddrModal(a)}
+                        onDelete={deleteAddress}
+                        onSetDefault={setDefaultAddress}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -823,14 +846,7 @@ export default function Account() {
         )}
       </div>
 
-      {/* Address Modal */}
-      {addrModal !== null && (
-        <AddressModal
-          addr={typeof addrModal === 'object' ? addrModal : null}
-          onClose={() => setAddrModal(null)}
-          onSave={saveAddress}
-        />
-      )}
+
     </div>
   );
 }
