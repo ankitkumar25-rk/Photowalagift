@@ -19,10 +19,15 @@ export const rateLimit = ({ max, windowSec, keyPrefix = 'rl', customKey = null }
     try {
       const pipeline = valkey.multi();
       pipeline.incr(key);
-      pipeline.expire(key, windowSec);
+      pipeline.ttl(key);
       
       const results = await pipeline.exec();
       const current = results[0][1];
+      const ttl = results[1][1];
+      
+      if (ttl < 0) {
+        await valkey.expire(key, windowSec);
+      }
 
       res.setHeader('X-RateLimit-Limit', max);
       res.setHeader('X-RateLimit-Remaining', Math.max(0, max - current));

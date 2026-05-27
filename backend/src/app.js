@@ -169,9 +169,9 @@ if (process.env.NODE_ENV !== 'test') {
 // ================================
 // RATE LIMITING
 // ================================
-app.use('/api', rateLimit({ max: 100, windowSec: 60 }));
-app.use('/api/auth/login', rateLimit({ max: 5, windowSec: 60, keyPrefix: 'rl:auth' }));
-app.use('/api/auth/register', rateLimit({ max: 5, windowSec: 60, keyPrefix: 'rl:auth' }));
+app.use('/api', rateLimit({ max: 300, windowSec: 60 }));
+app.use('/api/auth/login', rateLimit({ max: 20, windowSec: 60, keyPrefix: 'rl:auth' }));
+app.use('/api/auth/register', rateLimit({ max: 15, windowSec: 60, keyPrefix: 'rl:auth' }));
 
 app.use('/api', ensureCsrfCookie);
 app.use('/api', requireCsrf);
