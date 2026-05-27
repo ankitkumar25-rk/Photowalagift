@@ -24,15 +24,20 @@ export default function Login() {
     };
     try {
       await login(trimmedForm);
-      toast.success('Welcome back! 🏆');
+      toast.success('Welcome back! 🎉');
       navigate(redirect, { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err?.response?.status === 403 && err?.response?.data?.message?.includes('verify')) {
+        toast.error('Please verify your email first.');
+        navigate(`/verify-otp?email=${encodeURIComponent(trimmedForm.email)}&redirect=${encodeURIComponent(redirect)}`);
+      } else {
+        toast.error(err?.response?.data?.message || 'Login failed. Please check your credentials.');
+      }
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 bg-gradient-to-br from-brand-surface to-cream-200">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 bg-linear-to-br from-brand-surface to-cream-200">
       <div className="w-full max-w-md">
         <div className="card p-8 shadow-lg">
           {/* Logo */}

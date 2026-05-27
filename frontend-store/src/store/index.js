@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi, cartApi } from '../api';
+import { authApi, cartApi, usersApi } from '../api';
 
 export const useAuthStore = create(
   persist(
@@ -13,6 +13,25 @@ export const useAuthStore = create(
 
       setUser: (user) => set({ user }),
       finishInitialization: () => set({ isInitialized: true, isHydrating: false }),
+
+      isProfileComplete: () => {
+        const user = get().user;
+        if (!user) return false;
+        return !!(
+          user.phone?.trim() &&
+          user.address?.trim() &&
+          user.city?.trim() &&
+          user.state?.trim() &&
+          user.pincode?.trim()
+        );
+      },
+
+      updateProfile: (updatedFields) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          set({ user: { ...currentUser, ...updatedFields } });
+        }
+      },
       login: async (credentials) => {
         set({ isLoading: true, isHydrating: false });
         try {
@@ -83,9 +102,29 @@ export const useAuthStore = create(
               useCartStore.getState().resetCart();
               return null;
             }
-            set({ user: userData, _fetchMePromise: null, isInitialized: true, isHydrating: false });
+            // Fetch addresses and find the default one to merge into user object in state
+            let addressData = {};
+            try {
+              const addrRes = await usersApi.getAddresses();
+              const addrs = addrRes.data?.data || [];
+              const def = addrs.find((a) => a.isDefault) || addrs[0];
+              if (def) {
+                addressData = {
+                  address: def.line1,
+                  city: def.city,
+                  state: def.state,
+                  pincode: def.pincode,
+                  phone: def.phone || userData.phone,
+                };
+              }
+            } catch (addrErr) {
+              console.warn('[Store] fetchMe - Failed to load addresses:', addrErr);
+            }
+
+            const mergedUser = { ...userData, ...addressData };
+            set({ user: mergedUser, _fetchMePromise: null, isInitialized: true, isHydrating: false });
             await useCartStore.getState().fetchCart();
-            return userData;
+            return mergedUser;
           } catch (err) {
             if (hadUserBefore) {
               set({ user: null, _fetchMePromise: null, isInitialized: true, isHydrating: false });

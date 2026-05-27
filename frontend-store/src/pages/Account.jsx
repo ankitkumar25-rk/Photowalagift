@@ -434,7 +434,11 @@ export default function Account() {
     e.preventDefault();
     setSaving(true);
     try {
-      await usersApi.updateProfile(profile);
+      const response = await usersApi.updateProfile(profile);
+      const updatedUser = response.data?.data || response.data;
+      if (updatedUser) {
+        useAuthStore.getState().updateProfile(updatedUser);
+      }
       await fetchMe();
       toast.success('Profile updated!');
     } catch (err) {
@@ -459,13 +463,25 @@ export default function Account() {
   /* ── Address actions ── */
   const saveAddress = async (form) => {
     try {
+      let response;
       if (addrModal && typeof addrModal === 'object' && addrModal.id) {
-        await usersApi.updateAddress(addrModal.id, form);
+        response = await usersApi.updateAddress(addrModal.id, form);
         toast.success('Address updated!');
       } else {
-        await usersApi.addAddress(form);
+        response = await usersApi.addAddress(form);
         toast.success('Address added!');
       }
+      const savedAddr = response.data?.data || response.data;
+      if (savedAddr && (savedAddr.isDefault || addresses.length === 0)) {
+        useAuthStore.getState().updateProfile({
+          address: savedAddr.line1,
+          city: savedAddr.city,
+          state: savedAddr.state,
+          pincode: savedAddr.pincode,
+          phone: savedAddr.phone,
+        });
+      }
+      await fetchMe();
       setAddrModal(null);
       loadAddresses();
     } catch (err) {
@@ -479,6 +495,7 @@ export default function Account() {
     try {
       await usersApi.deleteAddress(id);
       toast.success('Address deleted');
+      await fetchMe();
       loadAddresses();
     } catch { toast.error('Failed to delete'); }
   };
@@ -486,6 +503,17 @@ export default function Account() {
   const setDefaultAddress = async (id) => {
     try {
       await usersApi.setDefaultAddr(id);
+      const target = addresses.find((a) => a.id === id);
+      if (target) {
+        useAuthStore.getState().updateProfile({
+          address: target.line1,
+          city: target.city,
+          state: target.state,
+          pincode: target.pincode,
+          phone: target.phone,
+        });
+      }
+      await fetchMe();
       loadAddresses();
     } catch { toast.error('Failed to set default'); }
   };

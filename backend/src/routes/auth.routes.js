@@ -33,10 +33,8 @@ router.post('/logout',        authenticate,    authController.logout);
 router.post('/refresh',                        authController.refresh);
 router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
 router.post('/reset-password',  authRateLimiter, authController.resetPassword);
-router.post('/verify-email',     authRateLimiter, authController.verifyEmail);
-router.post('/resend-verification', authRateLimiter, authController.resendVerificationEmail);
-router.post('/send-otp',       registrationRateLimiter, authController.sendOTP);
-router.post('/verify-otp',     registrationRateLimiter, authController.verifyOTP);
+router.post('/verify-otp',    authRateLimiter, authController.verifyOtp);
+router.post('/resend-otp',    authRateLimiter, authController.resendOtp);
 
 if (googleConfigured) {
   router.get('/google', (req, res, next) => {

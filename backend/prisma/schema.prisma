@@ -76,7 +76,7 @@ model User {
   phone           String?
   passwordHash    String?
   role            Role      @default(CUSTOMER)
-  isEmailVerified Boolean   @default(false)
+  isVerified Boolean   @default(false)
   avatarUrl       String?
   googleId        String?   @unique
   isBanned        Boolean   @default(false)
@@ -89,7 +89,6 @@ model User {
   cart            Cart?
   wishlist        WishlistItem[]
   refreshTokens        RefreshToken[]
-  emailVerificationTokens EmailVerificationToken[] @relation("EmailVerificationTokens")
   passwordResetTokens  PasswordResetToken[]
   returns              Return[]
   supportTickets       SupportTicket[]
@@ -142,30 +141,6 @@ model ServiceOrder {
   @@index([category])
   @@index([status])
   @@map("service_orders")
-}
-
-model EmailVerificationToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation("EmailVerificationTokens", fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@map("email_verification_tokens")
-}
-
-model EmailOTP {
-  id        String   @id @default(uuid())
-  email     String
-  otp       String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@map("email_otps")
-  @@index([email])
 }
 
 model PasswordResetToken {

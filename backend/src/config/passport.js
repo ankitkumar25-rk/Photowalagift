@@ -34,14 +34,14 @@ if (googleConfigured) {
                 email,
                 googleId: profile.id,
                 avatarUrl: profile.photos?.[0]?.value,
-                isEmailVerified: true,
+                isVerified: true,
               },
             });
           } else if (!user.googleId) {
             // Link existing email account to Google
             user = await prisma.user.update({
               where: { id: user.id },
-              data: { googleId: profile.id, avatarUrl: profile.photos?.[0]?.value, isEmailVerified: true },
+              data: { googleId: profile.id, avatarUrl: profile.photos?.[0]?.value, isVerified: true },
             });
           }
 

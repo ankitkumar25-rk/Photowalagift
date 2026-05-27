@@ -37,6 +37,24 @@ function QuickAddressModal({ onClose, onSave }) {
   const autocompleteRef = useRef(null);
   const { isLoaded } = useGoogleMaps();
 
+  const user = useAuthStore((s) => s.user);
+  const isProfileComplete = useAuthStore((s) => s.isProfileComplete?.() || false);
+
+  useEffect(() => {
+    if (isProfileComplete && user) {
+      setForm(prev => ({
+        ...prev,
+        fullName: user.name || '',
+        phone: user.phone || '',
+        line1: user.address || '',
+        city: user.city || '',
+        state: user.state || '',
+        pincode: user.pincode || '',
+      }));
+      setLine1Value(user.address || '');
+    }
+  }, []);
+
   useEffect(() => {
     if (!isLoaded || !inputRef.current) return;
     if (autocompleteRef.current) return;
@@ -200,7 +218,7 @@ function QuickAddressModal({ onClose, onSave }) {
                   ref={inputRef}
                   type="text"
                   name="line1"
-                  defaultValue=""
+                  value={line1Value}
                   onChange={handleLine1Change}
                   onBlur={handleLine1Blur}
                   placeholder="Start typing your address..."
@@ -352,6 +370,7 @@ export default function Checkout() {
 
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const isProfileComplete = useAuthStore((s) => s.isProfileComplete?.() || false);
 
   const subtotal = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
   const shipping = subtotal >= 1000 ? 0 : 49;
@@ -647,6 +666,12 @@ export default function Checkout() {
                     </div>
                   )}
 
+                  {/* Incomplete Profile Hint */}
+                  {!isProfileComplete && (
+                    <p className="text-xs text-[#8a7060] italic mt-4">
+                      Save your address in My Account for faster checkout
+                    </p>
+                  )}
 
                   {/* Divider */}
                   <div className="flex items-center gap-4 py-2">

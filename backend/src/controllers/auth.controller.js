@@ -1,9 +1,11 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import prisma from '../lib/prisma.js';
+import valkey from '../lib/valkey.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../config/paseto.js';
 import { sendMail } from '../lib/mailer.js';
 import { emailTemplates } from '../config/email.js';
+import { emailService } from '../services/email.service.js';
 import { createError } from '../middleware/errorHandler.js';
 import { z } from 'zod';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -54,6 +56,10 @@ async function issueTokens(user) {
   return { accessToken, refreshToken };
 }
 
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 export const register = asyncHandler(async (req, res) => {
   let { name, email, password } = registerSchema.parse(req.body);
   email = email.trim().toLowerCase();
@@ -64,32 +70,20 @@ export const register = asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash },
+    data: { name, email, passwordHash, isVerified: false },
   });
 
-  // Generate email verification token (valid for 24 hours)
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
-  
-  await prisma.emailVerificationToken.create({
-    data: {
-      token: hashedToken,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    },
-  });
+  const otp = generateOTP();
+  const redisKey = `otp:${email}`;
+  await valkey.setex(redisKey, 600, otp); // 10 minutes
 
-  // Send verification email
-  const verificationLink = `${process.env.CLIENT_URL}verify-email?token=${verificationToken}&email=${email}`;
-  const tpl = emailTemplates.emailVerification(user, verificationLink);
-  sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
+  // Send OTP
+  emailService.sendOtpEmail({ to: email, userName: name, otp }).catch(console.error);
 
   res.status(201).json({
     success: true,
-    message: 'Account created! Please check your email to verify your account.',
-    data: { 
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-    },
+    message: 'OTP sent',
+    email
   });
 });
 
@@ -99,6 +93,10 @@ export const login = asyncHandler(async (req, res) => {
 
   const user = await prisma.user.findFirst({ where: { email } });
   if (!user || !user.passwordHash) throw createError('Invalid credentials', 401);
+
+  if (!user.isVerified) {
+    throw createError('Please verify your email. Check your inbox for the OTP.', 403);
+  }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw createError('Invalid credentials', 401);
@@ -248,42 +246,31 @@ export const googleCallback = asyncHandler(async (req, res) => {
   res.redirect(redirectUrl);
 });
 
-export const verifyEmail = asyncHandler(async (req, res) => {
-  const { token, email } = req.body;
-  
-  if (!token || !email) {
-    throw createError('Token and email are required', 400);
+
+export const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = z.object({
+    email: z.string().email(),
+    otp: z.string().length(6).regex(/^\d+$/),
+  }).parse(req.body);
+
+  const normalizedEmail = email.toLowerCase();
+  const redisKey = `otp:${normalizedEmail}`;
+  const storedOtp = await valkey.get(redisKey);
+
+  if (!storedOtp || storedOtp !== otp) {
+    throw createError('Invalid or expired OTP', 400);
   }
 
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-  
-  // Find and verify the token
-  const verificationToken = await prisma.emailVerificationToken.findFirst({
-    where: {
-      token: hashedToken,
-      user: { email: email.toLowerCase() },
-      used: false,
-      expiresAt: { gt: new Date() }, // Token not expired
-    },
-    include: { user: true },
+  const user = await prisma.user.findFirst({ where: { email: normalizedEmail } });
+  if (!user) throw createError('User not found', 404);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { isVerified: true },
   });
 
-  if (!verificationToken) {
-    throw createError('Invalid or expired verification token', 400);
-  }
+  await valkey.del(redisKey);
 
-  // Update user as verified and mark token as used
-  const user = await prisma.user.update({
-    where: { id: verificationToken.userId },
-    data: { isEmailVerified: true },
-  });
-
-  await prisma.emailVerificationToken.update({
-    where: { id: verificationToken.id },
-    data: { used: true },
-  });
-
-  // Issue tokens for auto login
   const { accessToken, refreshToken } = await issueTokens(user);
 
   res.cookie('access_token', accessToken, COOKIE_OPTS);
@@ -291,154 +278,38 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: 'Email verified successfully! You are now logged in.',
+    message: 'Account verified successfully!',
     data: {
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
       accessToken,
-      refreshToken,
+      refreshToken
     },
   });
 });
 
-export const resendVerificationEmail = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  
-  if (!email) {
-    throw createError('Email is required', 400);
-  }
-
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  
-  if (!user) {
-    throw createError('User not found', 404);
-  }
-
-  if (user.isEmailVerified) {
-    throw createError('Email is already verified', 400);
-  }
-
-  // Invalidate old tokens
-  await prisma.emailVerificationToken.updateMany({
-    where: { userId: user.id, used: false },
-    data: { used: true },
-  });
-
-  // Generate new verification token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
-  
-  await prisma.emailVerificationToken.create({
-    data: {
-      token: hashedToken,
-      userId: user.id,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    },
-  });
-
-  // Send verification email
-  const verificationLink = `${process.env.CLIENT_URL}verify-email?token=${verificationToken}&email=${email}`;
-  const tpl = emailTemplates.emailVerification(user, verificationLink);
-  sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
-
-  res.json({
-    success: true,
-    message: 'Verification email sent. Please check your inbox.',
-  });
-});
-
-// Generate 6-digit OTP
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-export const sendOTP = asyncHandler(async (req, res) => {
+export const resendOtp = asyncHandler(async (req, res) => {
   const { email } = z.object({ email: z.string().email() }).parse(req.body);
   const normalizedEmail = email.toLowerCase();
 
-  // Check if user already exists
-  const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-  if (existingUser) throw createError('Email already registered', 409);
+  const user = await prisma.user.findFirst({ where: { email: normalizedEmail } });
+  if (!user) throw createError('User not found', 404);
+  if (user.isVerified) throw createError('Email is already verified', 400);
 
-  // Invalidate old OTPs for this email
-  await prisma.emailOTP.updateMany({
-    where: { email: normalizedEmail, used: false },
-    data: { used: true },
-  });
+  // Rate limiting check
+  const rateLimitKey = `otp_rate:${normalizedEmail}`;
+  const canSend = await valkey.set(rateLimitKey, '1', 'EX', 60, 'NX');
+  if (!canSend) {
+    throw createError('Please wait at least 60 seconds before requesting a new OTP', 429);
+  }
 
-  // Generate and save new OTP (valid for 10 minutes)
-  const otp = generateOTP();
-  await prisma.emailOTP.create({
-    data: {
-      email: normalizedEmail,
-      otp,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    },
-  });
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const redisKey = `otp:${normalizedEmail}`;
+  await valkey.setex(redisKey, 600, otp);
 
-  // Send OTP email
-  const { emailService } = await import('../services/email.service.js');
-  await emailService.sendOtpEmail({ to: normalizedEmail, userName: 'User', otp });
+  await emailService.sendOtpEmail({ to: normalizedEmail, userName: user.name, otp }).catch(console.error);
 
   res.json({
     success: true,
-    message: `OTP sent to ${normalizedEmail}. Valid for 10 minutes.`,
-  });
-});
-
-export const verifyOTP = asyncHandler(async (req, res) => {
-  const { email, otp, name, password } = z.object({
-    email: z.string().email(),
-    otp: z.string().length(6).regex(/^\d+$/),
-    name: z.string().min(2).max(100),
-    password: z.string().min(8).max(128),
-  }).parse(req.body);
-
-  const normalizedEmail = email.toLowerCase();
-
-  // Find valid OTP
-  const otpRecord = await prisma.emailOTP.findFirst({
-    where: {
-      email: normalizedEmail,
-      otp,
-      used: false,
-      expiresAt: { gt: new Date() },
-    },
-  });
-
-  if (!otpRecord) throw createError('Invalid or expired OTP', 400);
-
-  // Mark OTP as used
-  await prisma.emailOTP.update({
-    where: { id: otpRecord.id },
-    data: { used: true },
-  });
-
-  // Create user
-  const exists = await prisma.user.findFirst({ where: { email: normalizedEmail } });
-  if (exists) throw createError('Email already registered', 409);
-
-  const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
-    data: {
-      name: name.trim(),
-      email: normalizedEmail,
-      passwordHash,
-      isEmailVerified: true, // Auto-verify since OTP was verified
-    },
-  });
-
-  // Issue tokens
-  const { accessToken, refreshToken } = await issueTokens(user);
-
-  // Set cookies
-  res.cookie('accessToken', accessToken, COOKIE_OPTS);
-  res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTS);
-
-  res.status(201).json({
-    success: true,
-    message: 'Account created and verified successfully!',
-    data: {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-    },
+    message: 'OTP sent to your email.'
   });
 });

@@ -1,4 +1,7 @@
-import { useState } from 'react';
+const fs = require('fs');
+const f = '../frontend-store/src/pages/Register.jsx';
+
+const content = `import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Loader } from 'lucide-react';
@@ -12,15 +15,15 @@ export default function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
-  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-  const googleAuthUrl = `${apiBaseUrl}/auth/google?redirect=${encodeURIComponent(redirect)}`;
+  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\\/$/, '');
+  const googleAuthUrl = \`\${apiBaseUrl}/auth/google?redirect=\${encodeURIComponent(redirect)}\`;
 
   const getPasswordStrength = (pw) => {
     let score = 0;
     if (!pw) return 0;
     if (pw.length >= 8) score++;
     if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
-    if (/\d/.test(pw)) score++;
+    if (/\\d/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
     return score;
   };
@@ -41,7 +44,7 @@ export default function Register() {
       });
 
       toast.success('Account created! Please verify your email.');
-      navigate(`/verify-otp?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(redirect)}`);
+      navigate(\`/verify-otp?email=\${encodeURIComponent(email)}&redirect=\${encodeURIComponent(redirect)}\`);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Registration failed');
     } finally {
@@ -50,7 +53,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-10 bg-linear-to-br from-brand-surface to-cream-200">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-10 bg-gradient-to-br from-brand-surface to-cream-200">
       <div className="w-full max-w-md">
         <div className="card p-8 shadow-lg">
           <div className="text-center mb-8">
@@ -126,11 +129,11 @@ export default function Register() {
                 <div className="mt-2 space-y-1.5">
                   <div className="flex justify-between items-center px-0.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Security Strength</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    <span className={\`text-[10px] font-bold uppercase tracking-wider \${
                       getPasswordStrength(form.password) <= 1 ? 'text-red-500' : 
                       getPasswordStrength(form.password) <= 2 ? 'text-amber-500' : 
                       'text-green-600'
-                    }`}>
+                    }\`}>
                       {getPasswordStrength(form.password) <= 1 ? 'Weak' : 
                        getPasswordStrength(form.password) <= 2 ? 'Good' : 
                        'Strong'}
@@ -140,13 +143,13 @@ export default function Register() {
                     {[1, 2, 3, 4].map((level) => (
                       <div 
                         key={level}
-                        className={`h-full flex-1 transition-all duration-500 ${
+                        className={\`h-full flex-1 transition-all duration-500 \${
                           level <= getPasswordStrength(form.password) 
                             ? (getPasswordStrength(form.password) <= 1 ? 'bg-red-500' : 
                                getPasswordStrength(form.password) <= 2 ? 'bg-amber-500' : 
                                'bg-green-600')
                             : 'bg-gray-100'
-                        }`}
+                        }\`}
                       />
                     ))}
                   </div>
@@ -166,10 +169,12 @@ export default function Register() {
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Already have an account?{' '}
-            <Link to={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-brand-primary font-semibold hover:underline">Sign in</Link>
+            <Link to={\`/login?redirect=\${encodeURIComponent(redirect)}\`} className="text-brand-primary font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
       </div>
     </div>
   );
-}
+}`;
+
+fs.writeFileSync(f, content);
