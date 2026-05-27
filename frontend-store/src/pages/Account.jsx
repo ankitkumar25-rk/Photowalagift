@@ -432,6 +432,10 @@ export default function Account() {
   /* ── Profile save ── */
   const saveProfile = async (e) => {
     e.preventDefault();
+    if (profile.phone && !/^[0-9]{10}$/.test(profile.phone)) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
     setSaving(true);
     try {
       const response = await usersApi.updateProfile(profile);
@@ -681,7 +685,7 @@ export default function Account() {
             </div>
 
             {/* Services history quick link */}
-            <div className="card p-6 bg-brand-primary text-white">
+            <div className="p-6 bg-brand-primary text-white rounded-2xl border border-brand-primary shadow-lg overflow-hidden relative">
               <h3 className="font-bold flex items-center gap-2 mb-2">
                 <Settings className="w-4 h-4" /> Machine & Print Services
               </h3>

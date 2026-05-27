@@ -19,6 +19,7 @@ export const useAuthStore = create(
         if (!user) return false;
         return !!(
           user.phone?.trim() &&
+          /^[0-9]{10}$/.test(user.phone.trim()) &&
           user.address?.trim() &&
           user.city?.trim() &&
           user.state?.trim() &&

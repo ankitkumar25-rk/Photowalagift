@@ -244,55 +244,53 @@ export default function OrderDetail() {
           </div>
         )}
 
-        {!isCancelled && (
-          <div className="card p-8 mt-8 space-y-6">
+        {!isCancelled && (order.awbNumber || order.trackingNumber || order.status === 'SHIPPED') && (
+          <div className="card p-6 mt-8 space-y-4 animate-in fade-in duration-300">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center shrink-0">
                 <Truck className="w-5 h-5 text-brand-primary" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Shipping Status</h2>
-            </div>
-
-            <div className="flex justify-between">
-              {SHIPPING_STEPS.map((step, idx) => (
-                <div key={step.key} className="text-center flex-1">
-                  <div className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${idx <= shippingStepIndex ? 'bg-brand-secondary text-white' : 'bg-cream-200 text-gray-400'}`}>
-                    {idx + 1}
-                  </div>
-                  <p className="text-[10px] font-semibold text-gray-600 mt-2 uppercase tracking-wider">{step.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4 text-sm">
-              <div className="p-4 rounded-2xl border border-cream-200 bg-cream-50">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Courier</p>
-                <p className="font-semibold text-gray-900 mt-1">{order.courierName || 'Pending'}</p>
-                <p className="text-xs text-gray-500">{order.courierService || 'Service pending'}</p>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 leading-tight">Shiprocket Courier Tracking</h2>
+                <p className="text-xs text-gray-500 font-medium">Your delivery is handled automatically via Shiprocket logistics.</p>
               </div>
-              <div className="p-4 rounded-2xl border border-cream-200 bg-cream-50">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AWB Number</p>
-                <div className="flex items-center justify-between gap-2 mt-1">
-                  <p className="font-mono font-bold text-gray-900 truncate">{order.awbNumber || 'Pending'}</p>
-                  {order.awbNumber && (
-                    <button
-                      onClick={copyAwb}
-                      className="flex items-center gap-2 px-2 py-1 bg-brand-primary text-white rounded-lg text-[10px] font-semibold hover:bg-brand-secondary transition-colors"
-                    >
-                      {awbCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {awbCopied ? 'Copied' : 'Copy'}
-                    </button>
-                  )}
-                </div>
-                {order.awbNumber && (
-                  <a
-                    className="text-xs text-brand-primary font-semibold mt-2 inline-block"
-                    href={`https://backend.shipingtech.in/customer_api/order/track?awbs=${order.awbNumber}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Track on courier website
-                  </a>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4 text-sm mt-4">
+              <div className="p-4 rounded-2xl border border-cream-200 bg-cream-50/50">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Courier Partner</p>
+                <p className="font-semibold text-gray-900 mt-1">{order.courierName || 'Shiprocket Delivery Partner'}</p>
+                <p className="text-xs text-gray-500">{order.courierService || 'Fulfillment pending dispatch'}</p>
+              </div>
+              <div className="p-4 rounded-2xl border border-cream-200 bg-cream-50/50">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AWB Tracking Number</p>
+                {order.awbNumber || order.trackingNumber ? (
+                  <>
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <p className="font-mono font-bold text-gray-900 truncate">{order.awbNumber || order.trackingNumber}</p>
+                      <button
+                        onClick={order.awbNumber ? copyAwb : copyTracking}
+                        className="flex items-center gap-2 px-2.5 py-1 bg-brand-primary text-white rounded-lg text-[10px] font-semibold hover:bg-brand-secondary transition-colors"
+                      >
+                        {awbCopied || copied ? <Check className="w-3 h-3 stroke-[3]" /> : <Copy className="w-3 h-3" />}
+                        {awbCopied || copied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    {order.awbNumber ? (
+                      <a
+                        className="text-xs text-brand-secondary font-bold mt-2.5 inline-flex items-center gap-1 hover:underline"
+                        href={`https://shiprocket.co/tracking/${order.awbNumber}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Track live status on Shiprocket ↗
+                      </a>
+                    ) : (
+                      <p className="text-xs text-gray-400 mt-2 font-medium">Tracking number updated manually</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="font-medium text-gray-500 mt-1 italic">AWB assigned upon dispatch</p>
                 )}
               </div>
             </div>

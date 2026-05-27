@@ -136,6 +136,10 @@ function QuickAddressModal({ onClose, onSave }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!form.phone || !/^[0-9]{10}$/.test(form.phone)) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
     // Sync line1 from the DOM ref before submit (in case blur didn't fire)
     const currentLine1 = inputRef.current?.value || '';
     setForm(prev => ({ ...prev, line1: currentLine1 }));
@@ -204,7 +208,19 @@ function QuickAddressModal({ onClose, onSave }) {
             </div>
             <div>
               <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Phone *</label>
-              <input name="phone" value={form.phone} onChange={handle} required className="input-field" placeholder="10-digit mobile number" />
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  if (val.length <= 10) setForm(f => ({ ...f, phone: val }));
+                }}
+                required
+                pattern="[0-9]{10}"
+                className="input-field"
+                placeholder="10-digit mobile number"
+              />
             </div>
           </div>
 

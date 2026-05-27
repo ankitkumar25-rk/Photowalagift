@@ -176,6 +176,94 @@ export default function AdminOrderDetail() {
 
           <div className="card p-6 space-y-6 luxury-grain">
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#b88a2f] border-b border-[#5b3f2f]/5 pb-4">Lifecycle Management</h3>
+            
+            {/* Recommended Quick Actions */}
+            <div className="space-y-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-[#7a655c]/60">Recommended Next Step</p>
+              {order.status === 'PENDING' && (
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={statusMut.isPending}
+                    onClick={() => statusMut.mutate('CONFIRMED')}
+                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-emerald-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  >
+                    ✓ Confirm Order
+                  </button>
+                  <button
+                    type="button"
+                    disabled={statusMut.isPending}
+                    onClick={() => statusMut.mutate('CANCELLED')}
+                    className="w-full py-2.5 px-4 rounded-xl border border-red-200 text-red-600 font-bold text-[10px] uppercase tracking-wider hover:bg-red-50 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    ✕ Cancel Order
+                  </button>
+                </div>
+              )}
+              {order.status === 'CONFIRMED' && (
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={statusMut.isPending}
+                    onClick={() => statusMut.mutate('PROCESSING')}
+                    className="w-full py-3 px-4 rounded-xl bg-purple-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-purple-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  >
+                    ⚙ Start Processing
+                  </button>
+                  <button
+                    type="button"
+                    disabled={statusMut.isPending}
+                    onClick={() => statusMut.mutate('CANCELLED')}
+                    className="w-full py-2.5 px-4 rounded-xl border border-red-200 text-red-600 font-bold text-[10px] uppercase tracking-wider hover:bg-red-50 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    ✕ Cancel Order
+                  </button>
+                </div>
+              )}
+              {order.status === 'PROCESSING' && (
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={statusMut.isPending}
+                    onClick={() => statusMut.mutate('SHIPPED')}
+                    className="w-full py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-indigo-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  >
+                    🚚 Mark Shipped
+                  </button>
+                  <button
+                    type="button"
+                    disabled={statusMut.isPending}
+                    onClick={() => statusMut.mutate('CANCELLED')}
+                    className="w-full py-2.5 px-4 rounded-xl border border-red-200 text-red-600 font-bold text-[10px] uppercase tracking-wider hover:bg-red-50 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    ✕ Cancel Order
+                  </button>
+                </div>
+              )}
+              {order.status === 'SHIPPED' && (
+                <button
+                  type="button"
+                  disabled={statusMut.isPending}
+                  onClick={() => statusMut.mutate('DELIVERED')}
+                  className="w-full py-3 px-4 rounded-xl bg-green-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-green-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+                >
+                  ✓ Mark Delivered
+                </button>
+              )}
+              {['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status) && (
+                <div className="p-3.5 bg-[#fcf9f6] rounded-xl border border-[#5b3f2f]/5 text-center">
+                  <p className="text-xs font-bold text-[#5b3f2f] uppercase tracking-wider">Order Lifecycle Completed</p>
+                  <p className="text-[10px] text-[#7a655c]/70 mt-1">Status: {order.status}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 py-1">
+              <div className="flex-1 h-px bg-[#5b3f2f]/5" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#7a655c]/60">Manual Override</span>
+              <div className="flex-1 h-px bg-[#5b3f2f]/5" />
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               {STATUSES.map((s) => (
                 <button

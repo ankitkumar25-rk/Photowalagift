@@ -42,11 +42,6 @@ export default function Navbar() {
 
   return (
     <header className={headerClass}>
-      {/* Top bar */}
-      <div className="bg-[#5a3f2f] text-[#fff6ef] text-[10px] sm:text-xs text-center py-2 px-4 font-semibold tracking-wide border-b border-[#d8a45f]/25">
-        <span className="hidden sm:inline">Free shipping on orders above ₹999 | </span>
-        Personalized gifts crafted for memorable moments
-      </div>
 
       <div className="relative max-w-screen-2xl mx-auto px-6 sm:px-10 lg:px-16">
         <div className="flex items-center justify-between h-20 md:h-24 gap-6">

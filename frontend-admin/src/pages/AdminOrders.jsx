@@ -95,14 +95,56 @@ export default function AdminOrders() {
 
               <div className="flex flex-col gap-3 pt-2">
                 <div className="flex items-center gap-2">
-                  <select
-                    className="input-field py-2 text-xs flex-1"
-                    value={order.status}
-                    onChange={e => statusMut.mutate({ id: order.id, status: e.target.value, trackingNumber: order.trackingNumber ?? undefined })}
-                  >
-                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  <Link to={'/orders/' + order.id} className="px-4 py-2 rounded-lg bg-[#f5e7d8] text-[#5b3f2f] text-[10px] font-black uppercase tracking-widest hover:bg-[#5b3f2f] hover:text-white transition-all">
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    {order.status === 'PENDING' && (
+                      <button
+                        type="button"
+                        disabled={statusMut.isPending}
+                        onClick={() => statusMut.mutate({ id: order.id, status: 'CONFIRMED', trackingNumber: order.trackingNumber ?? undefined })}
+                        className="w-full py-1.5 rounded-lg bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1"
+                      >
+                        ✓ Confirm Order
+                      </button>
+                    )}
+                    {order.status === 'CONFIRMED' && (
+                      <button
+                        type="button"
+                        disabled={statusMut.isPending}
+                        onClick={() => statusMut.mutate({ id: order.id, status: 'PROCESSING', trackingNumber: order.trackingNumber ?? undefined })}
+                        className="w-full py-1.5 rounded-lg bg-purple-600 text-white text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1"
+                      >
+                        ⚙ Start Processing
+                      </button>
+                    )}
+                    {order.status === 'PROCESSING' && (
+                      <button
+                        type="button"
+                        disabled={statusMut.isPending}
+                        onClick={() => statusMut.mutate({ id: order.id, status: 'SHIPPED', trackingNumber: order.trackingNumber ?? undefined })}
+                        className="w-full py-1.5 rounded-lg bg-indigo-600 text-white text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1"
+                      >
+                        🚚 Mark Shipped
+                      </button>
+                    )}
+                    {order.status === 'SHIPPED' && (
+                      <button
+                        type="button"
+                        disabled={statusMut.isPending}
+                        onClick={() => statusMut.mutate({ id: order.id, status: 'DELIVERED', trackingNumber: order.trackingNumber ?? undefined })}
+                        className="w-full py-1.5 rounded-lg bg-green-600 text-white text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1"
+                      >
+                        ✓ Mark Delivered
+                      </button>
+                    )}
+                    <select
+                      className="input-field py-1 text-xs w-full mt-1 bg-white"
+                      value={order.status}
+                      onChange={e => statusMut.mutate({ id: order.id, status: e.target.value, trackingNumber: order.trackingNumber ?? undefined })}
+                    >
+                      {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <Link to={'/orders/' + order.id} className="px-4 py-2 rounded-lg bg-[#f5e7d8] text-[#5b3f2f] text-[10px] font-black uppercase tracking-widest hover:bg-[#5b3f2f] hover:text-white transition-all self-end shrink-0">
                     View
                   </Link>
                 </div>
@@ -160,12 +202,54 @@ export default function AdminOrders() {
                     {new Date(order.createdAt).toLocaleDateString('en-IN')}
                   </td>
                   <td className="px-6 py-4">
-                    <select
-                      className="input-field py-1 text-xs w-36"
-                      value={order.status}
-                      onChange={e => statusMut.mutate({ id: order.id, status: e.target.value, trackingNumber: order.trackingNumber ?? undefined })}>
-                      {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      {order.status === 'PENDING' && (
+                        <button
+                          type="button"
+                          disabled={statusMut.isPending}
+                          onClick={() => statusMut.mutate({ id: order.id, status: 'CONFIRMED', trackingNumber: order.trackingNumber ?? undefined })}
+                          className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                        >
+                          Confirm
+                        </button>
+                      )}
+                      {order.status === 'CONFIRMED' && (
+                        <button
+                          type="button"
+                          disabled={statusMut.isPending}
+                          onClick={() => statusMut.mutate({ id: order.id, status: 'PROCESSING', trackingNumber: order.trackingNumber ?? undefined })}
+                          className="px-2 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[9px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                        >
+                          Process
+                        </button>
+                      )}
+                      {order.status === 'PROCESSING' && (
+                        <button
+                          type="button"
+                          disabled={statusMut.isPending}
+                          onClick={() => statusMut.mutate({ id: order.id, status: 'SHIPPED', trackingNumber: order.trackingNumber ?? undefined })}
+                          className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                        >
+                          Ship
+                        </button>
+                      )}
+                      {order.status === 'SHIPPED' && (
+                        <button
+                          type="button"
+                          disabled={statusMut.isPending}
+                          onClick={() => statusMut.mutate({ id: order.id, status: 'DELIVERED', trackingNumber: order.trackingNumber ?? undefined })}
+                          className="px-2 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-[9px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                        >
+                          Deliver
+                        </button>
+                      )}
+                      <select
+                        className="input-field py-1 px-1.5 text-[10px] w-20 bg-white"
+                        value={order.status}
+                        onChange={e => statusMut.mutate({ id: order.id, status: e.target.value, trackingNumber: order.trackingNumber ?? undefined })}>
+                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <input
