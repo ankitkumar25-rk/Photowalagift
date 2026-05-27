@@ -3,7 +3,10 @@ import valkey from '../lib/valkey.js';
 
 const fetchPincodeFromAPI = (pincode) => {
   return new Promise((resolve, reject) => {
-    const req = https.get(`https://api.postalpincode.in/pincode/${pincode}`, { timeout: 5500 }, (res) => {
+    const req = https.get(`https://api.postalpincode.in/pincode/${pincode}`, { 
+      timeout: 5500,
+      rejectUnauthorized: false // Bypasses expired SSL certificate validation of the government API
+    }, (res) => {
       if (res.statusCode !== 200) {
         reject(new Error(`India Post API returned status ${res.statusCode}`));
         return;
