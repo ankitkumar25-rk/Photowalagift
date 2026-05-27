@@ -1,4 +1,5 @@
 import { sendMail } from '../lib/mailer.js';
+import prisma from '../lib/prisma.js';
 
 const BRAND_COLOR = '#C85212';
 const BG_COLOR = '#FDF6F0';
@@ -155,6 +156,22 @@ export const emailService = {
   async sendAdminTransactionNotification({ order, user, transactionType = 'ORDER_CREATED' }) {
     const adminEmail = process.env.ADMIN_EMAIL || 'photowalagiftphotowalagift@gmail.com';
     
+    let fullOrder = order;
+    try {
+      const dbOrder = await prisma.order.findUnique({
+        where: { id: order.id },
+        include: {
+          items: true,
+          address: true
+        }
+      });
+      if (dbOrder) {
+        fullOrder = dbOrder;
+      }
+    } catch (err) {
+      console.error('Failed to load full order for transaction email:', err);
+    }
+
     const typeLabel = {
       ORDER_CREATED: '📦 New Order Created',
       ORDER_PAID: '✅ Order Payment Received',
@@ -163,11 +180,22 @@ export const emailService = {
       ORDER_CANCELLED: '❌ Order Cancelled',
     }[transactionType] || '🔔 Transaction Update';
 
-    const itemsHtml = (order.items || []).map(item => `
-      <li style="padding: 8px 0; border-bottom: 1px solid #eeeeee;">
-        <strong>${item.name}</strong> (Qty: ${item.qty}) — ₹${item.price}
-      </li>
-    `).join('');
+    const itemsHtml = (fullOrder.items || []).map(item => {
+      const itemName = item.productName || item.name || 'Unknown Product';
+      const itemQty = item.quantity || item.qty || 1;
+      const customText = item.customizationText 
+        ? ` <br/><span style="font-size: 11px; color: #888;">Customization: "${item.customizationText}"</span>` 
+        : '';
+      return `
+        <li style="padding: 8px 0; border-bottom: 1px solid #eeeeee;">
+          <strong>${itemName}</strong> (Qty: ${itemQty}) — ₹${item.price}${customText}
+        </li>
+      `;
+    }).join('');
+
+    const customerName = fullOrder.address?.fullName || user?.name || 'Customer';
+    const customerPhone = fullOrder.address?.phone || user?.phone || 'N/A';
+    const customerEmail = user?.email || 'N/A';
 
     const content = `
       <h2 style="color: #e74c3c; margin-bottom: 20px;">${typeLabel}</h2>
@@ -179,17 +207,17 @@ export const emailService = {
 
       <div style="border: 1px solid #eeeeee; border-radius: 8px; padding: 20px; margin-top: 20px;">
         <h3 style="color: #333; margin-top: 0;">Customer Details</h3>
-        <p style="margin: 5px 0;"><strong>Name:</strong> ${user.name}</p>
-        <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
-        <p style="margin: 5px 0;"><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+        <p style="margin: 5px 0;"><strong>Name:</strong> ${customerName}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${customerEmail}</p>
+        <p style="margin: 5px 0;"><strong>Phone:</strong> ${customerPhone}</p>
       </div>
 
       <div style="border: 1px solid #eeeeee; border-radius: 8px; padding: 20px; margin-top: 20px;">
         <h3 style="color: #333; margin-top: 0;">Order Information</h3>
-        <p style="margin: 5px 0;"><strong>Order ID:</strong> #${order.orderNumber || order.id}</p>
-        <p style="margin: 5px 0;"><strong>Total Amount:</strong> <span style="color: ${BRAND_COLOR}; font-size: 18px;">₹${order.total}</span></p>
-        <p style="margin: 5px 0;"><strong>Items Count:</strong> ${order.items?.length || 0}</p>
-        <p style="margin: 5px 0;"><strong>Payment Status:</strong> <strong style="color: ${order.paymentStatus === 'PAID' ? '#27ae60' : '#e74c3c'};">${order.paymentStatus || 'PENDING'}</strong></p>
+        <p style="margin: 5px 0;"><strong>Order ID:</strong> #${fullOrder.orderNumber || fullOrder.id}</p>
+        <p style="margin: 5px 0;"><strong>Total Amount:</strong> <span style="color: ${BRAND_COLOR}; font-size: 18px;">₹${fullOrder.total}</span></p>
+        <p style="margin: 5px 0;"><strong>Items Count:</strong> ${fullOrder.items?.length || 0}</p>
+        <p style="margin: 5px 0;"><strong>Payment Status:</strong> <strong style="color: ${fullOrder.paymentStatus === 'PAID' ? '#27ae60' : '#e74c3c'};">${fullOrder.paymentStatus || 'PENDING'}</strong></p>
       </div>
 
       <div style="border: 1px solid #eeeeee; border-radius: 8px; padding: 20px; margin-top: 20px;">
@@ -200,7 +228,7 @@ export const emailService = {
       </div>
 
       <div style="text-align: center; margin-top: 30px;">
-        <a href="${process.env.ADMIN_URL || '#'}/orders/${order.id}" style="background-color: #e74c3c; color: #ffffff; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);">
+        <a href="${process.env.ADMIN_URL || '#'}/orders/${fullOrder.id}" style="background-color: #e74c3c; color: #ffffff; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);">
           View in Admin Dashboard
         </a>
       </div>
