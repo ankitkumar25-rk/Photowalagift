@@ -10,6 +10,7 @@
     "postinstall": "npx prisma generate",
     "start": "node src/server.js",
     "seed": "node src/utils/seed.js",
+    "db:clear-customers": "node src/utils/clear-data.js",
     "reset:admin-password": "node src/utils/reset-admin-password.js",
     "images:migrate:cloudinary": "node src/utils/migrate-images-to-cloudinary.js",
     "db:push": "npx prisma db push",
