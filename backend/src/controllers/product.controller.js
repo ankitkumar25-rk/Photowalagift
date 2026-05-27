@@ -22,8 +22,16 @@ const productSchema = z.object({
   stock:         z.coerce.number().int().min(0).default(0),
   lowStockAlert: z.coerce.number().int().min(0).default(10),
   sku:           z.string().optional(),
-  isFeatured:    z.coerce.boolean().default(false),
-  isActive:      z.coerce.boolean().default(true),
+  isFeatured:    z.preprocess((val) => {
+    if (val === 'true' || val === true) return true;
+    if (val === 'false' || val === false) return false;
+    return val;
+  }, z.coerce.boolean()).default(false),
+  isActive:      z.preprocess((val) => {
+    if (val === 'true' || val === true) return true;
+    if (val === 'false' || val === false) return false;
+    return val;
+  }, z.coerce.boolean()).default(true),
   tags:          z.preprocess((val) => (typeof val === 'string' ? val.split(',').map(s => s.trim()).filter(Boolean) : val), z.array(z.string())).default([]),
   certifications: z.preprocess((val) => (typeof val === 'string' ? val.split(',').map(s => s.trim()).filter(Boolean) : val), z.array(z.string())).default([]),
   weight:        z.preprocess((val) => (val === '' || val === undefined || val === null ? null : Number(val)), z.number().nullable().optional()),
