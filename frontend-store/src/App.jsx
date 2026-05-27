@@ -86,7 +86,16 @@ export default function App() {
       if (hasOAuthTokens) {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
-        window.history.replaceState({}, '', window.location.pathname);
+        
+        // Preserve redirect and success query parameters while removing sensitive tokens
+        const redirectParam = params.get('redirect');
+        const successParam = params.get('success');
+        const searchParts = [];
+        if (redirectParam) searchParts.push(`redirect=${encodeURIComponent(redirectParam)}`);
+        if (successParam) searchParts.push(`success=${encodeURIComponent(successParam)}`);
+        const newSearch = searchParts.length > 0 ? `?${searchParts.join('&')}` : '';
+        
+        window.history.replaceState({}, '', `${window.location.pathname}${newSearch}`);
       }
     } catch (e) {
       console.warn('[Auth] OAuth token bootstrap failed:', e);

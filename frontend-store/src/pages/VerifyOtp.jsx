@@ -92,7 +92,7 @@ export default function VerifyOtp() {
                 type="text"
                 maxLength="6"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\\D/g, ''))}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 placeholder="000000"
                 className="w-full text-center text-3xl tracking-[1em] font-mono p-4 border-2 border-cream-300 rounded-xl focus:border-brand-primary focus:ring-0 transition-colors"
                 required
