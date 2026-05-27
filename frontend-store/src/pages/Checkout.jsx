@@ -18,42 +18,32 @@ import { loadRazorpayScript } from '../utils/razorpay';
 import { useGoogleMaps } from '../hooks/useGoogleMaps';
 import api from '../api/client'; // axiosInstance
 
-/* -- Mini address form modal -- */
-function QuickAddressModal({ onClose, onSave }) {
+/* -- Inline address form component -- */
+function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
+  const user = useAuthStore((s) => s.user);
+  
   const [form, setForm] = useState({
-    label: 'Home', fullName: '', phone: '',
-    line1: '', line2: '', city: '', state: '', pincode: '', isDefault: false,
+    label: 'Home',
+    fullName: user?.name || '',
+    phone: user?.phone || '',
+    line1: user?.address || '',
+    line2: '',
+    city: user?.city || '',
+    state: user?.state || '',
+    pincode: user?.pincode || '',
+    isDefault: false,
   });
+  
   const [saving, setSaving] = useState(false);
   const [isValidAddress, setIsValidAddress] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [pincodeError, setPincodeError] = useState(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [suggestedAddress, setSuggestedAddress] = useState('');
-  // Separate tracking for line1 to avoid React vs Google Autocomplete conflict
-  const [line1Value, setLine1Value] = useState('');
 
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const { isLoaded } = useGoogleMaps();
-
-  const user = useAuthStore((s) => s.user);
-  const isProfileComplete = useAuthStore((s) => s.isProfileComplete?.() || false);
-
-  useEffect(() => {
-    if (isProfileComplete && user) {
-      setForm(prev => ({
-        ...prev,
-        fullName: user.name || '',
-        phone: user.phone || '',
-        line1: user.address || '',
-        city: user.city || '',
-        state: user.state || '',
-        pincode: user.pincode || '',
-      }));
-      setLine1Value(user.address || '');
-    }
-  }, []);
 
   useEffect(() => {
     if (!isLoaded || !inputRef.current) return;
@@ -79,13 +69,12 @@ function QuickAddressModal({ onClose, onSave }) {
         place.address_components.find(c => c.types.includes(type))?.long_name || '';
 
       const formatted = place.formatted_address;
-      setLine1Value(formatted);
       setForm(prev => ({
         ...prev,
         line1: formatted,
-        city: get('locality') || get('sublocality_level_1') || get('administrative_area_level_2'),
-        state: get('administrative_area_level_1'),
-        pincode: get('postal_code'),
+        city: get('locality') || get('sublocality_level_1') || get('administrative_area_level_2') || '',
+        state: get('administrative_area_level_1') || '',
+        pincode: get('postal_code') || '',
       }));
       setIsValidAddress(true);
     });
@@ -93,18 +82,7 @@ function QuickAddressModal({ onClose, onSave }) {
 
   const handle = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-  };
-
-  // Separate handler for line1: uncontrolled input synced on blur
-  const handleLine1Change = (e) => {
-    setLine1Value(e.target.value);
-    setIsValidAddress(false);
-  };
-
-  const handleLine1Blur = () => {
-    const val = inputRef.current?.value || '';
-    setLine1Value(val);
-    setForm(prev => ({ ...prev, line1: val }));
+    if (e.target.name === 'line1') setIsValidAddress(false);
   };
 
   const handlePincodeChange = async (e) => {
@@ -140,10 +118,6 @@ function QuickAddressModal({ onClose, onSave }) {
       toast.error('Phone number must be exactly 10 digits');
       return;
     }
-    // Sync line1 from the DOM ref before submit (in case blur didn't fire)
-    const currentLine1 = inputRef.current?.value || '';
-    setForm(prev => ({ ...prev, line1: currentLine1 }));
-    form.line1 = currentLine1;
     setIsValidating(true);
     try {
       const { data: vData } = await api.post('/users/addresses/validate', {
@@ -177,179 +151,163 @@ function QuickAddressModal({ onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
-        <div className="flex items-center justify-between p-8 border-b-2 border-cream-200">
-          <div>
-            <h3 className="font-bold text-2xl text-brand-primary">
-              Add Delivery <span className="text-brand-secondary">Address</span>
-            </h3>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-cream-100 rounded-xl transition-colors">
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
+    <form onSubmit={submit} className="space-y-6 bg-cream-50/30 p-5 sm:p-6 rounded-3xl border border-cream-200 animate-in fade-in duration-300">
+      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Enter Delivery Details</p>
+      <div className="flex gap-2">
+        {['Home', 'Work', 'Other'].map((l) => (
+          <button key={l} type="button"
+            onClick={() => setForm((f) => ({ ...f, label: l }))}
+            className={`flex-1 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
+              form.label === l ? 'bg-brand-primary text-white shadow-md' : 'bg-cream-100 text-gray-700 hover:bg-cream-200'
+            }`}
+          >{l}</button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Full Name *</label>
+          <input name="fullName" value={form.fullName} onChange={handle} required className="input-field" placeholder="John Doe" />
         </div>
-        <form onSubmit={submit} className="p-8 space-y-6">
-          <div className="flex gap-2">
-            {['Home', 'Work', 'Other'].map((l) => (
-              <button key={l} type="button"
-                onClick={() => setForm((f) => ({ ...f, label: l }))}
-                className={`flex-1 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all ${
-                  form.label === l ? 'bg-brand-primary text-white shadow-md' : 'bg-cream-100 text-gray-700 hover:bg-cream-200'
-                }`}
-              >{l}</button>
-            ))}
-          </div>
+        <div>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Phone *</label>
+          <input
+            type="tel"
+            name="phone"
+            value={form.phone}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 10) setForm(f => ({ ...f, phone: val }));
+            }}
+            required
+            pattern="[0-9]{10}"
+            className="input-field"
+            placeholder="10-digit mobile number"
+          />
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Full Name *</label>
-              <input name="fullName" value={form.fullName} onChange={handle} required className="input-field" placeholder="John Doe" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Phone *</label>
-              <input
-                type="tel"
-                name="phone"
-                value={form.phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  if (val.length <= 10) setForm(f => ({ ...f, phone: val }));
-                }}
-                required
-                pattern="[0-9]{10}"
-                className="input-field"
-                placeholder="10-digit mobile number"
-              />
-            </div>
-          </div>
-
-          <div className="relative">
-            <label className="block text-xs uppercase tracking-wider text-[#5b3f2f]/60 mb-1.5 font-semibold">
-              Address Line 1
-            </label>
-            {isLoaded ? (
-              <div className="relative">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  name="line1"
-                  value={line1Value}
-                  onChange={handleLine1Change}
-                  onBlur={handleLine1Blur}
-                  placeholder="Start typing your address..."
-                  autoComplete="off"
-                  required
-                  className={`w-full rounded-xl px-4 py-3 pr-10 border bg-white/80 text-[#5b3f2f] placeholder-[#5b3f2f]/30 focus:outline-none focus:ring-2 transition-all duration-200 font-[DM_Sans] ${
-                    isValidAddress ? 'border-green-400 focus:ring-green-100' : 'border-[#f5e7d8] focus:ring-[#b88a2f]/20 focus:border-[#b88a2f]'
-                  }`}
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {isValidAddress ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  ) : line1Value ? (
-                    <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
-                  ) : null}
-                </div>
-                {!isValidAddress && line1Value?.length > 3 && (
-                  <p className="text-xs text-[#b88a2f] mt-1.5 flex items-center gap-1 italic">
-                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                    Select from suggestions for accurate delivery
-                  </p>
-                )}
+      <div className="relative">
+        <label className="block text-xs uppercase tracking-wider text-[#5b3f2f]/60 mb-1.5 font-semibold">
+          Address Line 1
+        </label>
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="text"
+            name="line1"
+            value={form.line1}
+            onChange={handle}
+            placeholder={isLoaded ? "Start typing your address..." : "Flat, House no., Street, Area"}
+            autoComplete="off"
+            required
+            className={`w-full rounded-xl px-4 py-3 pr-10 border bg-white/80 text-[#5b3f2f] placeholder-[#5b3f2f]/30 focus:outline-none focus:ring-2 transition-all duration-200 font-[DM_Sans] ${
+              isValidAddress ? 'border-green-400 focus:ring-green-100' : 'border-[#f5e7d8] focus:ring-[#b88a2f]/20 focus:border-[#b88a2f]'
+            }`}
+          />
+          {isLoaded && (
+            <>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {isValidAddress ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : form.line1 ? (
+                  <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
+                ) : null}
               </div>
-            ) : (
-              <input
-                ref={inputRef}
-                type="text"
-                name="line1"
-                value={form.line1}
-                onChange={(e) => setForm(f => ({ ...f, line1: e.target.value }))}
-                placeholder="Flat, House no., Street, Area"
-                required
-                className="input-field"
-              />
-            )}
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Address Line 2 (Optional)</label>
-            <input name="line2" value={form.line2} onChange={handle} className="input-field" placeholder="Flat, Floor, Building" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">City *</label>
-              <input name="city" value={form.city} onChange={handle} required className="input-field" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">State *</label>
-              <input name="state" value={form.state} onChange={handle} required className="input-field" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Pincode *</label>
-              <input name="pincode" value={form.pincode} onChange={handlePincodeChange} required className="input-field" maxLength="6" />
-              {pincodeError && (
-                <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> {pincodeError}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={form.isDefault}
-              onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
-              className="w-4 h-4 accent-brand-primary rounded" />
-            <span className="text-sm font-medium text-gray-700">Set as default address</span>
-          </label>
-
-          <button type="submit" disabled={saving || isValidating}
-            className="w-full bg-brand-primary text-white py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg shadow-brand-primary/20 hover:bg-brand-deep transition-all">
-            {saving || isValidating ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                {isValidating ? 'Validating...' : 'Saving...'}
-              </div>
-            ) : 'Save & Continue'}
-          </button>
-        </form>
-
-        {showSuggestionModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center px-4">
-            <div className="bg-[#fffdfb] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
-              <h3 className="font-bold text-[#5b3f2f] text-lg mb-1">Suggested Address</h3>
-              <p className="text-xs text-[#5b3f2f]/60 mb-4">Google found a more accurate version of your address</p>
-              <div className="space-y-3 mb-6">
-                <div className="bg-[#f5e7d8] rounded-xl p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#5b3f2f]/50 mb-1">You entered</p>
-                  <p className="text-sm text-[#5b3f2f]">{form.line1}</p>
-                </div>
-                <div className="bg-[#b88a2f]/10 border border-[#b88a2f]/30 rounded-xl p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#b88a2f] mb-1">✓ Suggested</p>
-                  <p className="text-sm text-[#5b3f2f] font-medium">{suggestedAddress}</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setShowSuggestionModal(false); performSave(); }}
-                  className="flex-1 border border-[#5b3f2f] text-[#5b3f2f] rounded-full py-2.5 text-sm font-semibold hover:bg-[#f5e7d8] transition-all duration-200"
-                >Keep Mine</button>
-                <button
-                  onClick={() => {
-                    const updated = { ...form, line1: suggestedAddress };
-                    setForm(updated);
-                    setShowSuggestionModal(false);
-                    performSave(updated);
-                  }}
-                  className="flex-1 bg-[#5b3f2f] text-white rounded-full py-2.5 text-sm font-semibold hover:bg-[#3b1d16] transition-all duration-200"
-                >Use Suggested</button>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
+        </div>
+        {isLoaded && !isValidAddress && form.line1?.length > 3 && (
+          <p className="text-xs text-[#b88a2f] mt-1.5 flex items-center gap-1 italic">
+            <AlertCircle className="w-3 h-3 flex-shrink-0" />
+            Select from suggestions for accurate delivery
+          </p>
         )}
       </div>
-    </div>
+
+      <div>
+        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Address Line 2 (Optional)</label>
+        <input name="line2" value={form.line2} onChange={handle} className="input-field" placeholder="Flat, Floor, Building" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">City *</label>
+          <input name="city" value={form.city} onChange={handle} required className="input-field" />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">State *</label>
+          <input name="state" value={form.state} onChange={handle} required className="input-field" />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Pincode *</label>
+          <input name="pincode" value={form.pincode} onChange={handlePincodeChange} required className="input-field" maxLength="6" />
+          {pincodeError && (
+            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> {pincodeError}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={form.isDefault}
+          onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
+          className="w-4 h-4 accent-brand-primary rounded" />
+        <span className="text-sm font-medium text-gray-700">Set as default address</span>
+      </label>
+
+      <div className="flex gap-3">
+        {showCancel && (
+          <button type="button" onClick={onCancel} className="flex-1 py-3.5 border-2 border-cream-300 text-gray-700 font-bold rounded-2xl text-xs uppercase tracking-wider hover:bg-cream-50 transition-colors">
+            Cancel
+          </button>
+        )}
+        <button type="submit" disabled={saving || isValidating}
+          className="flex-1 bg-brand-primary text-white py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-brand-primary/20 hover:bg-brand-deep transition-all">
+          {saving || isValidating ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {isValidating ? 'Validating...' : 'Saving...'}
+            </div>
+          ) : 'Save & Continue'}
+        </button>
+      </div>
+
+      {showSuggestionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center px-4">
+          <div className="bg-[#fffdfb] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="font-bold text-[#5b3f2f] text-lg mb-1">Suggested Address</h3>
+            <p className="text-xs text-[#5b3f2f]/60 mb-4">Google found a more accurate version of your address</p>
+            <div className="space-y-3 mb-6">
+              <div className="bg-[#f5e7d8] rounded-xl p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#5b3f2f]/50 mb-1">You entered</p>
+                <p className="text-sm text-[#5b3f2f]">{form.line1}</p>
+              </div>
+              <div className="bg-[#b88a2f]/10 border border-[#b88a2f]/30 rounded-xl p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#b88a2f] mb-1">✓ Suggested</p>
+                <p className="text-sm text-[#5b3f2f] font-medium">{suggestedAddress}</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowSuggestionModal(false); performSave(); }}
+                className="flex-1 border border-[#5b3f2f] text-[#5b3f2f] rounded-full py-2.5 text-sm font-semibold hover:bg-[#f5e7d8] transition-all duration-200"
+              >Keep Mine</button>
+              <button
+                onClick={() => {
+                  const updated = { ...form, line1: suggestedAddress };
+                  setForm(updated);
+                  setShowSuggestionModal(false);
+                  performSave(updated);
+                }}
+                className="flex-1 bg-[#5b3f2f] text-white rounded-full py-2.5 text-sm font-semibold hover:bg-[#3b1d16] transition-all duration-200"
+              >Use Suggested</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </form>
   );
 }
 
@@ -369,7 +327,7 @@ export default function Checkout() {
   const [step, setStep]               = useState(1);
   const [addresses, setAddresses]     = useState([]);
   const [selectedAddr, setSelectedAddr] = useState(null);
-  const [showAddrModal, setShowAddrModal] = useState(false);
+  const [showInlineForm, setShowInlineForm] = useState(false);
   const [notes, setNotes]             = useState('');
   const [placing, setPlacing]         = useState(false);
   const [showItems, setShowItems]     = useState(false);
@@ -395,13 +353,42 @@ export default function Checkout() {
   const loadAddresses = useCallback(async () => {
     try {
       const { data } = await usersApi.getAddresses();
-      setAddresses(data.data);
-      const def = data.data.find((a) => a.isDefault) || data.data[0];
-      if (def && !selectedAddr) setSelectedAddr(def.id);
+      let list = data.data || [];
+
+      // Automatically register and save user profile address if lists are empty but profile is complete
+      if (list.length === 0 && user?.address && user?.city && user?.pincode) {
+        try {
+          const autoRes = await usersApi.addAddress({
+            label: 'Home',
+            fullName: user.name || 'Personal Profile',
+            phone: user.phone || '',
+            line1: user.address,
+            line2: '',
+            city: user.city,
+            state: user.state || '',
+            pincode: user.pincode,
+            isDefault: true
+          });
+          if (autoRes.data?.data) {
+            list = [autoRes.data.data];
+          }
+        } catch (autoErr) {
+          console.error('[Checkout] Failed to auto-save profile address:', autoErr);
+        }
+      }
+
+      setAddresses(list);
+      const def = list.find((a) => a.isDefault) || list[0];
+      if (def) {
+        setSelectedAddr(def.id);
+        setShowInlineForm(false);
+      } else {
+        setShowInlineForm(true);
+      }
     } catch (err) {
       toast.error('Failed to load addresses');
     }
-  }, [selectedAddr]);
+  }, [user]);
 
   useEffect(() => { loadAddresses(); }, [loadAddresses]);
 
@@ -414,7 +401,7 @@ export default function Checkout() {
       const { data } = await usersApi.addAddress(form);
       await loadAddresses();
       setSelectedAddr(data.data.id);
-      setShowAddrModal(false);
+      setShowInlineForm(false);
       toast.success('Address added!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add address');
@@ -612,17 +599,12 @@ export default function Checkout() {
 
               {step === 1 && (
                 <div className="space-y-6">
-                  {addresses.length === 0 ? (
-                    <div className="text-center py-12 px-4 rounded-2xl bg-linear-to-br from-brand-surface to-cream-50 border-2 border-dashed border-cream-300">
-                      <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-4 shadow-sm">
-                        <MapPin className="w-6 h-6 text-brand-primary" />
-                      </div>
-                      <p className="text-gray-700 text-sm font-semibold mb-1">No Saved Addresses Yet</p>
-                      <p className="text-gray-500 text-xs mb-6">Add a delivery address to continue with checkout</p>
-                      <button onClick={() => setShowAddrModal(true)} className="btn-primary mx-auto inline-flex items-center gap-2">
-                        <Plus className="w-4 h-4" /> Add Your First Address
-                      </button>
-                    </div>
+                  {showInlineForm ? (
+                    <InlineAddressForm 
+                      onSave={addAddress} 
+                      onCancel={() => setShowInlineForm(false)} 
+                      showCancel={addresses.length > 0} 
+                    />
                   ) : (
                     <div className="space-y-3">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Delivery Address</p>
@@ -671,7 +653,7 @@ export default function Checkout() {
 
                       {/* Add New Address Button */}
                       <button
-                        onClick={() => setShowAddrModal(true)}
+                        onClick={() => setShowInlineForm(true)}
                         className="w-full py-3 sm:py-4 border-2 border-dashed border-cream-400 rounded-2xl text-xs sm:text-sm font-bold text-brand-primary hover:border-brand-secondary hover:bg-brand-surface transition-all flex items-center justify-center gap-2 sm:gap-3 group mt-2"
                       >
                         <div className="w-5 h-5 rounded-full border-2 border-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all flex items-center justify-center">
@@ -1051,9 +1033,7 @@ export default function Checkout() {
         </div> {/* ✅ closes grid */}
       </div> {/* ✅ closes max-w-6xl */}
 
-      {showAddrModal && (
-        <QuickAddressModal onClose={() => setShowAddrModal(false)} onSave={addAddress} />
-      )}
+
 
       {paymentLoading === 'verifying' && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
