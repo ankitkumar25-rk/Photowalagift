@@ -29,6 +29,7 @@ import supportRoutes from './routes/support.routes.js';
 import serviceOrderRoutes from './routes/serviceOrder.routes.js';
 import notificationRoutes from './api/notifications/routes.js';
 import shippingRoutes from './api/shipping/routes.js';
+import { getPincodeDetails } from './controllers/pincode.controller.js';
 
 
 import * as paymentController from './controllers/payment.controller.js';
@@ -260,6 +261,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/service-orders', serviceOrderRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/shipping', shippingRoutes);
+app.get('/api/address/pincode/:pincode', getPincodeDetails);
 
 
 app.use((req, res) => {

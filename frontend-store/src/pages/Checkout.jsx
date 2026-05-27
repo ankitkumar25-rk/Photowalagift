@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   MapPin, Plus, Check, Truck, Package,
   ShoppingBag, ArrowLeft, X, ChevronDown, ChevronUp, ChevronRight,
-  Shield, Tag, Info, CreditCard, Banknote, CheckCircle, AlertCircle
+  Shield, Tag, Info, CreditCard, Banknote, CheckCircle, AlertCircle, LoaderCircle
 } from 'lucide-react';
 import { 
   MdSecurity, MdLocalShipping, MdAssignmentReturn 
@@ -35,81 +35,147 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
   });
   
   const [saving, setSaving] = useState(false);
-  const [isValidAddress, setIsValidAddress] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
-  const [pincodeError, setPincodeError] = useState(null);
-  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
-  const [suggestedAddress, setSuggestedAddress] = useState('');
+  
+  // Pincode & Autofill States
+  const [pincodeStatus, setPincodeStatus] = useState(form.pincode && form.pincode.length === 6 ? 'success' : 'idle');
+  const [postOffices, setPostOffices] = useState([]);
+  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
+  const [showAreaHelper, setShowAreaHelper] = useState(false);
+  const [pincodeStatusText, setPincodeStatusText] = useState('');
+  
+  const [autoFilledFields, setAutoFilledFields] = useState({
+    line1: false,
+    city: false,
+    state: false
+  });
 
-  const inputRef = useRef(null);
-  const autocompleteRef = useRef(null);
-  const { isLoaded } = useGoogleMaps();
+  const lastSearchedPincode = useRef(form.pincode || '');
+  const searchTimeoutRef = useRef(null);
 
+  // Clean up timeout on unmount
   useEffect(() => {
-    if (!isLoaded || !inputRef.current) return;
-    if (autocompleteRef.current) return;
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, []);
 
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(
-      inputRef.current,
-      {
-        componentRestrictions: { country: 'IN' },
-        fields: ['address_components', 'formatted_address', 'geometry', 'place_id'],
-        types: ['address'],
-      }
-    );
-
-    autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace();
-      if (!place.geometry || !place.address_components) {
-        setIsValidAddress(false);
-        return;
-      }
-
-      const get = (type) =>
-        place.address_components.find(c => c.types.includes(type))?.long_name || '';
-
-      const formatted = place.formatted_address;
-      setForm(prev => ({
-        ...prev,
-        line1: formatted,
-        city: get('locality') || get('sublocality_level_1') || get('administrative_area_level_2') || '',
-        state: get('administrative_area_level_1') || '',
-        pincode: get('postal_code') || '',
-      }));
-      setIsValidAddress(true);
-    });
-  }, [isLoaded]);
-
-  const handle = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-    if (e.target.name === 'line1') setIsValidAddress(false);
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    
+    // Once user types, remove the auto-filled visual highlight
+    setAutoFilledFields(prev => ({ ...prev, [name]: false }));
+    
+    if (name === 'line1') {
+      setShowAreaHelper(false);
+    }
   };
 
-  const handlePincodeChange = async (e) => {
+  const handleFieldFocus = (e) => {
+    const { name } = e.target;
+    // Tint disappears as soon as user focuses
+    setAutoFilledFields(prev => ({ ...prev, [name]: false }));
+  };
+
+  const handlePincodeChange = (e) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 6);
     setForm(prev => ({ ...prev, pincode: value }));
-    setPincodeError(null);
 
+    // Reset status to idle if less than 6 digits
+    if (value.length < 6) {
+      setPincodeStatus('idle');
+      setPincodeStatusText('');
+      setPostOffices([]);
+      setShowAreaDropdown(false);
+      setShowAreaHelper(false);
+      
+      // Clear line1, city, state back to empty
+      setForm(prev => ({
+        ...prev,
+        line1: '',
+        city: '',
+        state: ''
+      }));
+      setAutoFilledFields({ line1: false, city: false, state: false });
+      lastSearchedPincode.current = '';
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      return;
+    }
+
+    // Exactly 6 digits
     if (value.length === 6) {
-      if (!/^[1-9][0-9]{5}$/.test(value)) {
-        setPincodeError('Invalid pincode');
+      if (value === lastSearchedPincode.current) {
         return;
       }
-      try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${value}`);
-        const data = await res.json();
-        if (data[0].Status === 'Success') {
-          const po = data[0].PostOffice[0];
+      
+      setPincodeStatus('loading');
+      setPincodeStatusText('Fetching location details...');
+      
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await api.get(`/address/pincode/${value}`);
+          const data = res.data; // { city, state, postOffices }
+
+          lastSearchedPincode.current = value;
+          setPincodeStatus('success');
+          
+          const firstArea = data.postOffices && data.postOffices.length > 0 ? data.postOffices[0] : '';
+          setPincodeStatusText(`📍 ${firstArea || data.city}, ${data.city}, ${data.state}`);
+
+          // Set form fields
           setForm(prev => ({
             ...prev,
-            city: po.District,
-            state: po.State,
+            city: data.city,
+            state: data.state,
+            line1: firstArea
           }));
-        } else {
-          setPincodeError('Pincode not found');
+
+          // Mark as auto-filled
+          setAutoFilledFields({
+            line1: !!firstArea,
+            city: !!data.city,
+            state: !!data.state
+          });
+
+          if (data.postOffices && data.postOffices.length > 0) {
+            setPostOffices(data.postOffices);
+            setShowAreaHelper(true);
+            if (data.postOffices.length > 1) {
+              setShowAreaDropdown(true);
+            } else {
+              setShowAreaDropdown(false);
+            }
+          } else {
+            setPostOffices([]);
+            setShowAreaDropdown(false);
+            setShowAreaHelper(false);
+          }
+        } catch (err) {
+          console.error(err);
+          lastSearchedPincode.current = value;
+          if (err.response?.status === 404) {
+            setPincodeStatus('error');
+            setPincodeStatusText('Invalid or unknown pincode');
+          } else {
+            // API down or network issue
+            setPincodeStatus('api_down');
+            setPincodeStatusText('Could not verify. Fill city and state manually.');
+          }
         }
-      } catch { /* fail silently */ }
+      }, 400);
     }
+  };
+
+  const handleAreaSelect = (area) => {
+    setForm(prev => ({ ...prev, line1: area }));
+    setAutoFilledFields(prev => ({ ...prev, line1: true }));
+    setShowAreaDropdown(false);
   };
 
   const submit = async (e) => {
@@ -118,33 +184,14 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       toast.error('Phone number must be exactly 10 digits');
       return;
     }
-    setIsValidating(true);
-    try {
-      const { data: vData } = await api.post('/users/addresses/validate', {
-        addressLine1: form.line1,
-        city: form.city,
-        state: form.state,
-        pincode: form.pincode,
-      });
-
-      if (vData.correctedAddress) {
-        setSuggestedAddress(vData.correctedAddress);
-        setShowSuggestionModal(true);
-        return;
-      }
-
-      await performSave();
-    } catch {
-      await performSave();
-    } finally {
-      setIsValidating(false);
+    if (!form.pincode || !/^[0-9]{6}$/.test(form.pincode)) {
+      toast.error('Pincode must be exactly 6 digits');
+      return;
     }
-  };
 
-  const performSave = async (overriddenForm = null) => {
     setSaving(true);
     try {
-      await onSave(overriddenForm || form);
+      await onSave(form);
     } finally {
       setSaving(false);
     }
@@ -164,10 +211,19 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
         ))}
       </div>
 
+      {/* 1. Full Name & 2. Phone */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Full Name *</label>
-          <input name="fullName" value={form.fullName} onChange={handle} required className="input-field" placeholder="John Doe" />
+          <input 
+            name="fullName" 
+            value={form.fullName} 
+            onChange={handleFieldChange} 
+            onFocus={handleFieldFocus}
+            required 
+            className="input-field" 
+            placeholder="John Doe" 
+          />
         </div>
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Phone *</label>
@@ -187,69 +243,124 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
         </div>
       </div>
 
-      <div className="relative">
-        <label className="block text-xs uppercase tracking-wider text-[#5b3f2f]/60 mb-1.5 font-semibold">
-          Address Line 1
-        </label>
+      {/* 3. Pincode */}
+      <div>
+        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Pincode *</label>
         <div className="relative">
-          <input
-            ref={inputRef}
+          <input 
             type="text"
-            name="line1"
-            value={form.line1}
-            onChange={handle}
-            placeholder={isLoaded ? "Start typing your address..." : "Flat, House no., Street, Area"}
-            autoComplete="off"
-            required
-            className={`w-full rounded-xl px-4 py-3 pr-10 border bg-white/80 text-[#5b3f2f] placeholder-[#5b3f2f]/30 focus:outline-none focus:ring-2 transition-all duration-200 font-[DM_Sans] ${
-              isValidAddress ? 'border-green-400 focus:ring-green-100' : 'border-[#f5e7d8] focus:ring-[#b88a2f]/20 focus:border-[#b88a2f]'
+            inputMode="numeric"
+            pattern="[0-9]*"
+            name="pincode" 
+            value={form.pincode} 
+            onChange={handlePincodeChange} 
+            required 
+            maxLength="6"
+            className={`input-field pr-10 border transition-all duration-200 ${
+              pincodeStatus === 'success' ? 'border-[#2d6a4f] focus:ring-[#2d6a4f]/20' :
+              pincodeStatus === 'error' ? 'border-[#c0392b] focus:ring-[#c0392b]/20' :
+              'border-[#f5e7d8] focus:border-[#b88a2f] focus:ring-[#b88a2f]/20'
             }`}
+            placeholder="6-digit pincode"
           />
-          {isLoaded && (
-            <>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {isValidAddress ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : form.line1 ? (
-                  <MapPin className="w-5 h-5 text-[#b88a2f] animate-pulse" />
-                ) : null}
-              </div>
-            </>
-          )}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+            {pincodeStatus === 'loading' && <LoaderCircle className="w-5 h-5 text-[#8a7060] animate-spin" />}
+            {pincodeStatus === 'success' && <Check className="w-5 h-5 text-[#2d6a4f]" />}
+            {pincodeStatus === 'error' && <X className="w-5 h-5 text-[#c0392b]" />}
+          </div>
         </div>
-        {isLoaded && !isValidAddress && form.line1?.length > 3 && (
-          <p className="text-xs text-[#b88a2f] mt-1.5 flex items-center gap-1 italic">
-            <AlertCircle className="w-3 h-3 flex-shrink-0" />
-            Select from suggestions for accurate delivery
+        {pincodeStatusText && (
+          <p className={`text-xs mt-1 font-medium ${
+            pincodeStatus === 'loading' ? 'text-[#8a7060]' :
+            pincodeStatus === 'success' ? 'text-[#2d6a4f]' :
+            pincodeStatus === 'error' ? 'text-[#c0392b]' :
+            'text-[#8a7060]' // api_down
+          }`}>
+            {pincodeStatusText}
           </p>
         )}
       </div>
 
+      {/* 4. Address Line 1 */}
       <div>
-        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Address Line 2 (Optional)</label>
-        <input name="line2" value={form.line2} onChange={handle} className="input-field" placeholder="Flat, Floor, Building" />
+        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Address Line 1 *</label>
+        <input 
+          type="text"
+          name="line1" 
+          value={form.line1} 
+          onChange={handleFieldChange} 
+          onFocus={handleFieldFocus}
+          required 
+          className={`input-field transition-all duration-200 ${
+            autoFilledFields.line1 ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
+          }`} 
+          placeholder="Flat, House no., Street, Area" 
+        />
+        {showAreaHelper && form.line1 && (
+          <p className="text-xs text-[#8a7060] mt-1 italic">
+            Area auto-filled. Add flat/house/street details above.
+          </p>
+        )}
+        {showAreaDropdown && postOffices.length > 1 && (
+          <div className="mt-2 bg-cream-50/50 border border-cream-200 rounded-xl p-3">
+            <label className="text-[10px] font-bold text-[#8a7060] uppercase block mb-1">Select your area</label>
+            <select 
+              onChange={(e) => handleAreaSelect(e.target.value)} 
+              value={form.line1}
+              className="w-full bg-white border border-[#f5e7d8] rounded-lg px-2.5 py-1.5 text-xs text-[#5b3f2f] focus:outline-none focus:border-[#b88a2f]"
+            >
+              {postOffices.map((po, idx) => (
+                <option key={idx} value={po}>{po}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* 5. Address Line 2 */}
+      <div>
+        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Address Line 2 (Optional)</label>
+        <input 
+          name="line2" 
+          value={form.line2} 
+          onChange={handleFieldChange} 
+          onFocus={handleFieldFocus}
+          className="input-field" 
+          placeholder="Flat, Floor, Building" 
+        />
+      </div>
+
+      {/* 6. City & 7. State */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">City *</label>
-          <input name="city" value={form.city} onChange={handle} required className="input-field" />
+          <input 
+            name="city" 
+            value={form.city} 
+            onChange={handleFieldChange} 
+            onFocus={handleFieldFocus}
+            required 
+            className={`input-field transition-all duration-200 ${
+              autoFilledFields.city ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
+            }`} 
+          />
         </div>
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">State *</label>
-          <input name="state" value={form.state} onChange={handle} required className="input-field" />
-        </div>
-        <div>
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Pincode *</label>
-          <input name="pincode" value={form.pincode} onChange={handlePincodeChange} required className="input-field" maxLength="6" />
-          {pincodeError && (
-            <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" /> {pincodeError}
-            </p>
-          )}
+          <input 
+            name="state" 
+            value={form.state} 
+            onChange={handleFieldChange} 
+            onFocus={handleFieldFocus}
+            required 
+            className={`input-field transition-all duration-200 ${
+              autoFilledFields.state ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
+            }`} 
+          />
         </div>
       </div>
 
+      {/* 8. Set as default address */}
       <label className="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" checked={form.isDefault}
           onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
@@ -263,50 +374,11 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
             Cancel
           </button>
         )}
-        <button type="submit" disabled={saving || isValidating}
+        <button type="submit" disabled={saving}
           className="flex-1 bg-brand-primary text-white py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-brand-primary/20 hover:bg-brand-deep transition-all">
-          {saving || isValidating ? (
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              {isValidating ? 'Validating...' : 'Saving...'}
-            </div>
-          ) : 'Save & Continue'}
+          {saving ? 'Saving...' : 'Save & Continue'}
         </button>
       </div>
-
-      {showSuggestionModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center px-4">
-          <div className="bg-[#fffdfb] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="font-bold text-[#5b3f2f] text-lg mb-1">Suggested Address</h3>
-            <p className="text-xs text-[#5b3f2f]/60 mb-4">Google found a more accurate version of your address</p>
-            <div className="space-y-3 mb-6">
-              <div className="bg-[#f5e7d8] rounded-xl p-3">
-                <p className="text-[10px] uppercase tracking-wider text-[#5b3f2f]/50 mb-1">You entered</p>
-                <p className="text-sm text-[#5b3f2f]">{form.line1}</p>
-              </div>
-              <div className="bg-[#b88a2f]/10 border border-[#b88a2f]/30 rounded-xl p-3">
-                <p className="text-[10px] uppercase tracking-wider text-[#b88a2f] mb-1">✓ Suggested</p>
-                <p className="text-sm text-[#5b3f2f] font-medium">{suggestedAddress}</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setShowSuggestionModal(false); performSave(); }}
-                className="flex-1 border border-[#5b3f2f] text-[#5b3f2f] rounded-full py-2.5 text-sm font-semibold hover:bg-[#f5e7d8] transition-all duration-200"
-              >Keep Mine</button>
-              <button
-                onClick={() => {
-                  const updated = { ...form, line1: suggestedAddress };
-                  setForm(updated);
-                  setShowSuggestionModal(false);
-                  performSave(updated);
-                }}
-                className="flex-1 bg-[#5b3f2f] text-white rounded-full py-2.5 text-sm font-semibold hover:bg-[#3b1d16] transition-all duration-200"
-              >Use Suggested</button>
-            </div>
-          </div>
-        </div>
-      )}
     </form>
   );
 }

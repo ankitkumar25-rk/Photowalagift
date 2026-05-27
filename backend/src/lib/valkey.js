@@ -1,10 +1,6 @@
 import Redis from 'ioredis';
 
-const valkeyUrl = process.env.VALKEY_URL;
-
-if (!valkeyUrl) {
-  throw new Error('VALKEY_URL is not defined in environment variables');
-}
+const valkeyUrl = process.env.VALKEY_URL || process.env.REDIS_URL || 'redis://localhost:6379';
 
 const isTls = valkeyUrl.startsWith('rediss://');
 
