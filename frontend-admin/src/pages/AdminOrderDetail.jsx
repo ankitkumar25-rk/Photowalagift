@@ -132,15 +132,33 @@ export default function AdminOrderDetail() {
             </div>
           </div>
 
+          {/* Customer Details */}
+          <div className="card p-6 luxury-grain space-y-4">
+             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#b88a2f] border-b border-[#5b3f2f]/5 pb-4">Customer Details</h3>
+             <div className="text-sm text-[#5b3f2f] leading-7 bg-[#fcf9f6] p-5 rounded-2xl border border-[#5b3f2f]/5 space-y-1">
+               <p><span className="opacity-60 font-semibold">Name:</span> <strong className="font-bold text-base text-[#5b3f2f]">{order.user?.name || order.guestName || order.shippingName || 'Guest Customer'}</strong></p>
+               <p><span className="opacity-60 font-semibold">Email:</span> <strong className="font-semibold text-[#5b3f2f]">{order.user?.email || order.guestEmail || 'No email provided'}</strong></p>
+               <p><span className="opacity-60 font-semibold">Phone:</span> <strong className="font-semibold text-[#5b3f2f]">{order.user?.phone || order.guestPhone || order.shippingPhone || 'No phone provided'}</strong></p>
+               <div className="pt-2">
+                 <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${order.userId ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-orange-50 text-orange-700 border border-orange-100'}`}>
+                   {order.userId ? 'Registered Customer' : 'Guest Checkout'}
+                 </span>
+               </div>
+             </div>
+          </div>
+
           {/* Shipping Address */}
           <div className="card p-6 luxury-grain space-y-4">
              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#b88a2f] border-b border-[#5b3f2f]/5 pb-4">Shipping Destination</h3>
-             {order.address ? (
+             {order.address || order.shippingLine1 ? (
                <div className="text-sm text-[#5b3f2f] leading-7 bg-[#fcf9f6] p-5 rounded-2xl border border-[#5b3f2f]/5">
-                 <p className="font-bold text-base mb-1">{order.address.fullName}</p>
-                 <p className="opacity-80 font-medium">{[order.address.line1, order.address.line2].filter(Boolean).join(', ')}</p>
-                 <p className="opacity-80 font-medium">{[order.address.city, order.address.state, order.address.pincode].filter(Boolean).join(', ')}</p>
-                 <p className="text-[10px] font-black uppercase tracking-widest mt-2 text-[#b88a2f]">{order.address.country || 'India'}</p>
+                 <p className="font-bold text-base mb-1">{order.address?.fullName || order.shippingName}</p>
+                 <p className="opacity-80 font-medium">{[order.address?.line1 || order.shippingLine1, order.address?.line2 || order.shippingLine2].filter(Boolean).join(', ')}</p>
+                 <p className="opacity-80 font-medium">{[order.address?.city || order.shippingCity, order.address?.state || order.shippingState, order.address?.pincode || order.shippingPincode].filter(Boolean).join(', ')}</p>
+                 <p className="text-[10px] font-black uppercase tracking-widest mt-2 text-[#b88a2f]">{order.address?.country || 'India'}</p>
+                 {(order.shippingPhone || order.guestPhone || order.address?.phone) && (
+                   <p className="opacity-80 font-medium mt-1">Phone: <strong>{order.shippingPhone || order.guestPhone || order.address?.phone}</strong></p>
+                 )}
                </div>
              ) : <p className="text-sm text-gray-500 italic">No destination set.</p>}
           </div>

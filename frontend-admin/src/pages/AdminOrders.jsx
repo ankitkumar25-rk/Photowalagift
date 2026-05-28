@@ -70,8 +70,8 @@ export default function AdminOrders() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[10px] font-black text-[#b88a2f] uppercase tracking-[0.2em]">{order.orderNumber}</p>
-                  <p className="text-sm font-bold text-[#5b3f2f] mt-1 truncate">{order.user?.name || 'Guest'}</p>
-                  <p className="text-[10px] font-semibold text-[#7a655c]/60 truncate">{order.user?.email || 'No email'}</p>
+                  <p className="text-sm font-bold text-[#5b3f2f] mt-1 truncate">{order.user?.name || order.guestName || order.shippingName || 'Guest'}</p>
+                  <p className="text-[10px] font-semibold text-[#7a655c]/60 truncate">{order.user?.email || order.guestEmail || 'No email'}</p>
                 </div>
                 <span className={'badge-status ' + order.status.toLowerCase()}>{order.status}</span>
               </div>
@@ -186,8 +186,8 @@ export default function AdminOrders() {
                 <tr key={order.id} className="hover:bg-[#f7f0e7]/50 transition-colors group">
                   <td className="px-6 py-4 text-sm font-mono font-bold text-[#5b3f2f]">{order.orderNumber}</td>
                   <td className="px-6 py-4">
-                    <p className="text-sm font-bold text-[#5b3f2f]">{order.user?.name}</p>
-                    <p className="text-[10px] font-semibold text-[#7a655c]/60 truncate max-w-[150px]">{order.user?.email}</p>
+                    <p className="text-sm font-bold text-[#5b3f2f]">{order.user?.name || order.guestName || order.shippingName || 'Guest'}</p>
+                    <p className="text-[10px] font-semibold text-[#7a655c]/60 truncate max-w-[150px]">{order.user?.email || order.guestEmail || 'No email'}</p>
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-[#5b3f2f]">₹{Number(order.total).toLocaleString('en-IN')}</td>
                   <td className="px-6 py-4">

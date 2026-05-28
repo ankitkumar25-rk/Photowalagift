@@ -72,19 +72,20 @@ export const createShipment = async (req, res, next) => {
       return next(createError('Order not found', 404));
     }
 
-    if (!order.address) {
+    const hasAddress = Boolean(order.address || order.shippingLine1);
+    if (!hasAddress) {
       return next(createError('Order address missing', 400));
     }
 
     const shipmentPayload = {
       booking_code: Number(process.env.SHIPINGTECH_BOOKING_CODE),
-      customerName: order.user?.name || order.address.fullName,
-      customerPhone: order.address.phone || order.user?.phone || '',
-      customerEmail: order.user?.email,
-      deliveryAddress: order.address.line1,
-      deliveryCity: order.address.city,
-      deliveryState: order.address.state,
-      deliveryPincode: order.address.pincode,
+      customerName: order.shippingName || order.guestName || order.user?.name || order.address?.fullName || 'Guest Customer',
+      customerPhone: order.shippingPhone || order.guestPhone || order.address?.phone || order.user?.phone || '',
+      customerEmail: order.guestEmail || order.user?.email || '',
+      deliveryAddress: order.address?.line1 || order.shippingLine1,
+      deliveryCity: order.address?.city || order.shippingCity,
+      deliveryState: order.address?.state || order.shippingState,
+      deliveryPincode: order.address?.pincode || order.shippingPincode,
       deliveryCountry: 'India',
       invoiceValue: Number(order.total),
       isCOD: order.paymentMethod === 'COD',
@@ -245,12 +246,13 @@ export const getRatesForOrder = async (req, res, next) => {
       include: { address: true },
     });
 
-    if (!order || !order.address) {
-      return next(createError('Order not found', 404));
+    const pincode = order?.address?.pincode || order?.shippingPincode;
+    if (!order || !pincode) {
+      return next(createError('Order or destination pincode not found', 404));
     }
 
     const rates = await ShipingTech.getShippingRates({
-      destinationPincode: order.address.pincode,
+      destinationPincode: pincode,
       weightKg: 1,
       isCOD: order.paymentMethod === 'COD',
       codAmount: order.paymentMethod === 'COD' ? Number(order.total) : 0,
