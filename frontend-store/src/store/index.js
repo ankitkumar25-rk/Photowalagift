@@ -156,12 +156,6 @@ export const useCartStore = create((set, get) => ({
   isLoading: false,
 
   fetchCart: async () => {
-    const authState = useAuthStore.getState();
-    if (!authState.user) {
-      set({ items: [], isLoading: false });
-      return;
-    }
-
     set({ isLoading: true });
     try {
       const { data } = await cartApi.get();

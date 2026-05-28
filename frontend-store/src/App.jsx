@@ -101,15 +101,19 @@ export default function App() {
       console.warn('[Auth] OAuth token bootstrap failed:', e);
     }
 
-    // Initial auth check on app mount - only if we have a token to verify
+    // Initial auth check on app mount
     const token = localStorage.getItem('token');
     if (token) {
       useAuthStore.getState().fetchMe().catch((err) => {
         console.error('Initial auth check failed:', err);
+        // Even if auth verification fails, fetch guest/fallback cart
+        useCartStore.getState().fetchCart().catch(() => {});
       });
     } else {
       // If no token, mark as initialized so UI can show
       useAuthStore.getState().finishInitialization();
+      // Fetch guest cart
+      useCartStore.getState().fetchCart().catch(() => {});
     }
   }, []); // Empty array: run only once on mount
 

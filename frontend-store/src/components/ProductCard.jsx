@@ -43,10 +43,6 @@ const ProductCard = memo(function ProductCard({ product }) {
     async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!user) {
-        navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
-        return;
-      }
       try {
         await addItem(product.id, 1);
         toast.success(`${product.name} added to cart!`, {
@@ -56,7 +52,7 @@ const ProductCard = memo(function ProductCard({ product }) {
         toast.error(err?.response?.data?.message || 'Failed to add to cart');
       }
     },
-    [addItem, product.id, product.name, navigate, location, user]
+    [addItem, product.id, product.name, navigate]
   );
 
   return (

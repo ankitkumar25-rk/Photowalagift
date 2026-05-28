@@ -237,10 +237,6 @@ export default function ProductDetail() {
   useEffect(() => { fetchProduct(); setQty(1); }, [fetchProduct]);
 
   const handleAddToCart = async () => {
-    if (!user) {
-      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
-      return;
-    }
     // Validate customization if enabled
     if (customizeEnabled) {
       if (customizeMode === 'text' && !customizationText.trim()) {
