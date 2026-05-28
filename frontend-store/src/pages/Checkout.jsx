@@ -21,11 +21,13 @@ import api from '../api/client'; // axiosInstance
 /* -- Inline address form component -- */
 function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
   const user = useAuthStore((s) => s.user);
+  const isGuest = !user;
   
   const [form, setForm] = useState({
     label: 'Home',
     fullName: user?.name || '',
     phone: user?.phone || '',
+    email: user?.email || '',
     line1: user?.address || '',
     line2: '',
     city: user?.city || '',
@@ -184,6 +186,10 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       toast.error('Phone number must be exactly 10 digits');
       return;
     }
+    if (isGuest && (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
     if (!form.pincode || !/^[0-9]{6}$/.test(form.pincode)) {
       toast.error('Pincode must be exactly 6 digits');
       return;
@@ -242,6 +248,23 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
           />
         </div>
       </div>
+
+      {/* Guest Email Field */}
+      {isGuest && (
+        <div>
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Email Address *</label>
+          <input 
+            type="email"
+            name="email" 
+            value={form.email} 
+            onChange={handleFieldChange} 
+            onFocus={handleFieldFocus}
+            required 
+            className="input-field" 
+            placeholder="yourname@example.com" 
+          />
+        </div>
+      )}
 
       {/* 3. Pincode */}
       <div>
@@ -398,6 +421,7 @@ export default function Checkout() {
 
   const [step, setStep]               = useState(1);
   const [addresses, setAddresses]     = useState([]);
+  const [guestAddress, setGuestAddress] = useState(null);
   const [selectedAddr, setSelectedAddr] = useState(null);
   const [showInlineForm, setShowInlineForm] = useState(false);
   const [notes, setNotes]             = useState('');
@@ -423,6 +447,12 @@ export default function Checkout() {
   const total    = subtotal + shipping;
 
   const loadAddresses = useCallback(async () => {
+    if (!user) {
+      setAddresses([]);
+      setSelectedAddr('guest');
+      setShowInlineForm(true);
+      return;
+    }
     try {
       const { data } = await usersApi.getAddresses();
       let list = data.data || [];
@@ -462,22 +492,37 @@ export default function Checkout() {
     }
   }, [user]);
 
-  useEffect(() => { loadAddresses(); }, [loadAddresses]);
+  useEffect(() => { 
+    if (user) {
+      loadAddresses(); 
+    } else {
+      setAddresses([]);
+      setSelectedAddr('guest');
+      setShowInlineForm(true);
+    }
+  }, [user, loadAddresses]);
 
   useEffect(() => {
     if (items.length === 0 && step !== 3) navigate('/cart');
   }, [items, step, navigate]);
 
   const addAddress = async (form) => {
-    try {
-      const { data } = await usersApi.addAddress(form);
-      await loadAddresses();
-      setSelectedAddr(data.data.id);
+    if (user) {
+      try {
+        const { data } = await usersApi.addAddress(form);
+        await loadAddresses();
+        setSelectedAddr(data.data.id);
+        setShowInlineForm(false);
+        toast.success('Address added!');
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to add address');
+        throw err;
+      }
+    } else {
+      setGuestAddress(form);
+      setSelectedAddr('guest');
       setShowInlineForm(false);
-      toast.success('Address added!');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add address');
-      throw err;
+      toast.success('Details saved!');
     }
   };
 
@@ -489,12 +534,17 @@ export default function Checkout() {
 
     try {
       if (method === 'COD') {
-        const { data: orderRes } = await ordersApi.create({ 
-          addressId: selectedAddr, 
+        const payload = {
           notes,
           paymentMethod: 'COD',
           idempotencyKey
-        });
+        };
+        if (selectedAddr === 'guest') {
+          payload.guestAddress = guestAddress;
+        } else {
+          payload.addressId = selectedAddr;
+        }
+        const { data: orderRes } = await ordersApi.create(payload);
         await handlePaymentSuccess('COD', orderRes.data.id);
       } else {
         // Razorpay flow: Create Razorpay order first (Split flow fix)
@@ -505,13 +555,19 @@ export default function Checkout() {
           return;
         }
 
-        const { data: responseBody } = await paymentsApi.createOrder({
+        const payload = {
           amount: total, 
           currency: 'INR', 
-          addressId: selectedAddr,
           notes,
           idempotencyKey
-        });
+        };
+        if (selectedAddr === 'guest') {
+          payload.guestAddress = guestAddress;
+        } else {
+          payload.addressId = selectedAddr;
+        }
+
+        const { data: responseBody } = await paymentsApi.createOrder(payload);
         const rzpData = responseBody.data;
         
         setPaymentInitiated(true);
@@ -527,14 +583,20 @@ export default function Checkout() {
           handler: async (resp) => {
             try {
               setPaymentLoading('verifying');
-              const { data: verifyData } = await paymentsApi.verifyPayment({
+              const verifyPayload = {
                 razorpay_order_id: resp.razorpay_order_id,
                 razorpay_payment_id: resp.razorpay_payment_id,
                 razorpay_signature: resp.razorpay_signature,
-                addressId: selectedAddr,
                 notes,
                 idempotencyKey
-              });
+              };
+              if (selectedAddr === 'guest') {
+                verifyPayload.guestAddress = guestAddress;
+              } else {
+                verifyPayload.addressId = selectedAddr;
+              }
+
+              const { data: verifyData } = await paymentsApi.verifyPayment(verifyPayload);
 
               if (verifyData.success) {
                 await handlePaymentSuccess('RAZORPAY', verifyData.order.id);
@@ -546,9 +608,9 @@ export default function Checkout() {
             }
           },
           prefill: {
-            name: user?.name || '',
-            email: user?.email || '',
-            contact: user?.phone || '',
+            name: user?.name || guestAddress?.fullName || '',
+            email: user?.email || guestAddress?.email || '',
+            contact: user?.phone || guestAddress?.phone || '',
           },
           theme: { color: '#5b3f2f' },
           modal: { 
@@ -592,7 +654,7 @@ export default function Checkout() {
     toast.success('Order placed successfully!');
   };
 
-  const selectedAddress = addresses.find((a) => a.id === selectedAddr);
+  const selectedAddress = selectedAddr === 'guest' ? guestAddress : addresses.find((a) => a.id === selectedAddr);
 
   return (
     <div className="min-h-screen bg-cream-100 luxury-grain pt-28 sm:pt-32 pb-20 sm:pb-24 px-3 sm:px-4 relative overflow-hidden">
@@ -724,15 +786,17 @@ export default function Checkout() {
                       ))}
 
                       {/* Add New Address Button */}
-                      <button
-                        onClick={() => setShowInlineForm(true)}
-                        className="w-full py-3 sm:py-4 border-2 border-dashed border-cream-400 rounded-2xl text-xs sm:text-sm font-bold text-brand-primary hover:border-brand-secondary hover:bg-brand-surface transition-all flex items-center justify-center gap-2 sm:gap-3 group mt-2"
-                      >
-                        <div className="w-5 h-5 rounded-full border-2 border-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all flex items-center justify-center">
-                          <Plus className="w-3 h-3" />
-                        </div>
-                        Add New Delivery Address
-                      </button>
+                      {user && (
+                        <button
+                          onClick={() => setShowInlineForm(true)}
+                          className="w-full py-3 sm:py-4 border-2 border-dashed border-cream-400 rounded-2xl text-xs sm:text-sm font-bold text-brand-primary hover:border-brand-secondary hover:bg-brand-surface transition-all flex items-center justify-center gap-2 sm:gap-3 group mt-2"
+                        >
+                          <div className="w-5 h-5 rounded-full border-2 border-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all flex items-center justify-center">
+                            <Plus className="w-3 h-3" />
+                          </div>
+                          Add New Delivery Address
+                        </button>
+                      )}
                     </div>
                   )}
 

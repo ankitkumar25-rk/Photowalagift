@@ -403,7 +403,7 @@ export default function OrderDetail() {
           {/* Info cards */}
           <div className="space-y-4">
             {/* Delivery address */}
-            {order.address && (
+            {(order.address || order.shippingLine1) && (
               <div className="card p-6 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-brand-surface flex items-center justify-center">
@@ -412,11 +412,11 @@ export default function OrderDetail() {
                   <h3 className="font-bold text-gray-900">Delivery Address</h3>
                 </div>
                 <div className="text-sm text-gray-700 space-y-1">
-                  <p className="font-semibold text-gray-900">{order.address.fullName}</p>
-                  <p>{order.address.line1}</p>
-                  {order.address.line2 && <p>{order.address.line2}</p>}
-                  <p>{order.address.city}, {order.address.state} – {order.address.pincode}</p>
-                  <p className="text-gray-600 font-medium">{order.address.phone}</p>
+                  <p className="font-semibold text-gray-900">{order.address?.fullName || order.shippingName}</p>
+                  <p>{order.address?.line1 || order.shippingLine1}</p>
+                  {(order.address?.line2 || order.shippingLine2) && <p>{order.address?.line2 || order.shippingLine2}</p>}
+                  <p>{order.address?.city || order.shippingCity}, {order.address?.state || order.shippingState} – {order.address?.pincode || order.shippingPincode}</p>
+                  <p className="text-gray-600 font-medium">{order.address?.phone || order.shippingPhone}</p>
                 </div>
               </div>
             )}

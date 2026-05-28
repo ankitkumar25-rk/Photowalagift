@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, optionalAuth, authorize } from '../middleware/auth.js';
 import * as orderController from '../controllers/order.controller.js';
 
 const router = express.Router();
@@ -7,7 +7,7 @@ const router = express.Router();
 const isAdmin = authorize('ADMIN', 'SUPER_ADMIN');
 
 // Customer routes
-router.post('/',            authenticate, orderController.createOrder);
+router.post('/',            optionalAuth, orderController.createOrder);
 router.get('/',             authenticate, orderController.getUserOrders);
 router.post('/pen/laser',   authenticate, orderController.createLaserPenOrder);
 
@@ -17,7 +17,7 @@ router.patch('/:id/status',     authenticate, isAdmin, orderController.updateOrd
 router.patch('/:id/tracking',   authenticate, isAdmin, orderController.updateTracking);
 router.patch('/admin/:id/cancel', authenticate, isAdmin, orderController.adminCancelOrder);
 
-router.get('/:id',          authenticate, orderController.getOrder);
-router.post('/:id/cancel',  authenticate, orderController.cancelOrder);
+router.get('/:id',          optionalAuth, orderController.getOrder);
+router.post('/:id/cancel',  optionalAuth, orderController.cancelOrder);
 
 export default router;

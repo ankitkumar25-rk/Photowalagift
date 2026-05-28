@@ -11,15 +11,49 @@ function generateOrderNumber() {
   return `ORG-${ts}-${rand}`;
 }
 
-export const saveOrderToDB = async ({ userId, addressId, notes, paymentMethod, paymentStatus, user }) => {
-  const address = await prisma.address.findFirst({
-    where: { id: addressId, userId },
-    select: { id: true },
-  });
-  if (!address) throw createError('Invalid delivery address', 400);
+export const saveOrderToDB = async ({ userId, addressId, guestAddress, notes, paymentMethod, paymentStatus, user, sessionId }) => {
+  let shippingDetails = {};
+
+  if (userId && addressId) {
+    const address = await prisma.address.findFirst({
+      where: { id: addressId, userId },
+    });
+    if (!address) throw createError('Invalid delivery address', 400);
+
+    shippingDetails = {
+      addressId: address.id,
+      shippingName: address.fullName,
+      shippingPhone: address.phone,
+      shippingLine1: address.line1,
+      shippingLine2: address.line2 || null,
+      shippingCity: address.city,
+      shippingState: address.state,
+      shippingPincode: address.pincode,
+    };
+  } else if (guestAddress) {
+    shippingDetails = {
+      guestName: guestAddress.fullName,
+      guestPhone: guestAddress.phone,
+      guestEmail: guestAddress.email,
+      shippingName: guestAddress.fullName,
+      shippingPhone: guestAddress.phone,
+      shippingLine1: guestAddress.line1,
+      shippingLine2: guestAddress.line2 || null,
+      shippingCity: guestAddress.city,
+      shippingState: guestAddress.state,
+      shippingPincode: guestAddress.pincode,
+    };
+  } else {
+    throw createError('Delivery address or guest details are required', 400);
+  }
+
+  const cartWhere = userId ? { userId } : { sessionId };
+  if (!cartWhere.userId && !cartWhere.sessionId) {
+    throw createError('Cart is empty', 400);
+  }
 
   const cart = await prisma.cart.findUnique({
-    where: { userId },
+    where: cartWhere,
     include: {
       items: {
         include: {
@@ -78,8 +112,7 @@ export const saveOrderToDB = async ({ userId, addressId, notes, paymentMethod, p
     const newOrder = await tx.order.create({
       data: {
         orderNumber: generateOrderNumber(),
-        userId,
-        addressId: address.id,
+        userId: userId || null,
         subtotal,
         shippingCost,
         total,
@@ -87,6 +120,7 @@ export const saveOrderToDB = async ({ userId, addressId, notes, paymentMethod, p
         paymentMethod,
         paymentStatus,
         status: paymentStatus === 'PAID' ? 'CONFIRMED' : 'PENDING',
+        ...shippingDetails,
         items: { create: orderItems },
       },
       include: { items: true },
@@ -94,19 +128,22 @@ export const saveOrderToDB = async ({ userId, addressId, notes, paymentMethod, p
 
     // Clear cart
     await tx.cart.update({
-      where: { userId },
+      where: cartWhere,
       data: { items: { deleteMany: {} } }
     });
 
     return newOrder;
   });
 
+  const customerName = order.shippingName || order.guestName || user?.name || 'Customer';
+  const customerEmail = order.guestEmail || user?.email || '';
+
   // Broadcast to admins
   broadcastToAdmins('new_order', {
     id: order.id,
     orderNumber: order.orderNumber,
-    customerName: user?.name || 'Customer',
-    customerEmail: user?.email,
+    customerName,
+    customerEmail,
     amount: order.total,
     itemCount: order.items?.length || 0,
     createdAt: order.createdAt,
@@ -115,20 +152,22 @@ export const saveOrderToDB = async ({ userId, addressId, notes, paymentMethod, p
 
   // Send confirmation emails safely
   try {
-    const userData = { name: user.name || 'Customer', email: user.email };
-    const tpl = emailTemplates.orderConfirmation(order, userData);
-    const adminTpl = emailTemplates.adminNewOrder(order, userData);
+    if (customerEmail) {
+      const userData = { name: customerName, email: customerEmail, phone: order.shippingPhone || order.guestPhone || user?.phone || '' };
+      const tpl = emailTemplates.orderConfirmation(order, userData);
+      const adminTpl = emailTemplates.adminNewOrder(order, userData);
 
-    sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
-    const adminEmail = process.env.COMPANY_EMAIL || process.env.EMAIL_FROM;
-    sendMail({ to: adminEmail, subject: adminTpl.subject, html: adminTpl.html }).catch(console.error);
-    
-    // Send admin transaction notification
-    emailService.sendAdminTransactionNotification({
-      order,
-      user: userData,
-      transactionType: paymentStatus === 'PAID' ? 'ORDER_PAID' : 'ORDER_CREATED'
-    }).catch(err => console.error('[Transaction Email] Failed:', err.message));
+      sendMail({ to: customerEmail, subject: tpl.subject, html: tpl.html }).catch(console.error);
+      const adminEmail = process.env.COMPANY_EMAIL || process.env.EMAIL_FROM || 'photowalagiftphotowalagift@gmail.com';
+      sendMail({ to: adminEmail, subject: adminTpl.subject, html: adminTpl.html }).catch(console.error);
+      
+      // Send admin transaction notification
+      emailService.sendAdminTransactionNotification({
+        order,
+        user: userData,
+        transactionType: paymentStatus === 'PAID' ? 'ORDER_PAID' : 'ORDER_CREATED'
+      }).catch(err => console.error('[Transaction Email] Failed:', err.message));
+    }
   } catch (emailErr) {
     console.error('[Email] Failed to process email templates:', emailErr.message);
   }

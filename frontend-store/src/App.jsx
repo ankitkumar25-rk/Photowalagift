@@ -136,18 +136,18 @@ export default function App() {
                 <Route path="products/:slug" element={<ProductDetail />} />
                 <Route path="categories/:slug" element={<Category />} />
                 <Route path="bulk-orders"   element={<BulkOrders />} />
-                <Route path="cart"          element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+                <Route path="cart"          element={<Cart />} />
                 <Route path="login"         element={<Login />} />
                 <Route path="register"      element={<Register />} />
                 <Route path="verify-otp"    element={<VerifyOtp />} />
 
                 {/* Protected Routes */}
-                <Route path="checkout"  element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+                <Route path="checkout"  element={<Checkout />} />
                 <Route path="checkout/service" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
                 <Route path="services/confirmation/:serviceOrderId" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
                 <Route path="orders"    element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-                <Route path="orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
-                <Route path="orders/:orderId/success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
+                <Route path="orders/:id" element={<OrderDetail />} />
+                <Route path="orders/:orderId/success" element={<OrderSuccess />} />
                 <Route path="account"   element={<ProtectedRoute><Account /></ProtectedRoute>} />
                 <Route path="my-account" element={<Navigate to="/account" replace />} />
                 <Route path="account/services" element={<ProtectedRoute><MyServiceOrders /></ProtectedRoute>} />

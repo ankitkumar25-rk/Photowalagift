@@ -22,19 +22,29 @@ async function autoCreateShipment(orderId) {
       },
     });
 
-    if (!order || !order.address || order.shipingTechUUID) return;
+    if (!order || order.shipingTechUUID) return;
+
+    const customerName = order.shippingName || order.user?.name || order.guestName || order.address?.fullName || '';
+    const customerPhone = order.shippingPhone || order.address?.phone || order.user?.phone || order.guestPhone || '';
+    const customerEmail = order.user?.email || order.guestEmail || '';
+    const deliveryAddress = order.shippingLine1 || order.address?.line1 || '';
+    const deliveryCity = order.shippingCity || order.address?.city || '';
+    const deliveryState = order.shippingState || order.address?.state || '';
+    const deliveryPincode = order.shippingPincode || order.address?.pincode || '';
+
+    if (!deliveryAddress) return;
 
     await ShipingTech.getToken();
 
     const payload = {
       booking_code: Number(process.env.SHIPINGTECH_BOOKING_CODE),
-      customerName: order.user?.name || order.address.fullName,
-      customerPhone: order.address.phone || order.user?.phone || '',
-      customerEmail: order.user?.email,
-      deliveryAddress: order.address.line1,
-      deliveryCity: order.address.city,
-      deliveryState: order.address.state,
-      deliveryPincode: order.address.pincode,
+      customerName,
+      customerPhone,
+      customerEmail,
+      deliveryAddress,
+      deliveryCity,
+      deliveryState,
+      deliveryPincode,
       deliveryCountry: 'India',
       invoiceValue: Number(order.total),
       isCOD: order.paymentMethod === 'COD',
@@ -76,15 +86,11 @@ console.log('[Razorpay] key_secret loaded:', !!process.env.RAZORPAY_KEY_SECRET);
  */
 export const createRazorpayOrder = asyncHandler(async (req, res, next) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
     const { orderType, amount, currency = 'INR', orderId } = req.body;
 
     if (orderType === 'SERVICE_ORDER' || orderType === 'SERVICE') {
-      if (!orderId) {
-        return res.status(400).json({ message: 'orderId is required for service payments' });
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: 'Unauthorized' });
       }
 
       const dbRecord = await prisma.serviceOrder.findFirst({
@@ -142,15 +148,26 @@ export const createRazorpayOrder = asyncHandler(async (req, res, next) => {
       });
     }
 
-    const { addressId, notes: orderNotes, idempotencyKey } = req.body;
+    const { addressId, guestAddress, notes: orderNotes, idempotencyKey } = req.body;
 
-    if (!addressId || !idempotencyKey) {
-      return res.status(400).json({ message: 'addressId and idempotencyKey are required' });
+    if (!addressId && !guestAddress) {
+      return res.status(400).json({ message: 'addressId or guestAddress is required' });
+    }
+    if (!idempotencyKey) {
+      return res.status(400).json({ message: 'idempotencyKey is required' });
     }
 
     // 1. Fetch Cart to get the REAL amount
+    const cartWhere = req.user
+      ? { userId: req.user.id }
+      : { sessionId: req.cookies?.cart_session };
+
+    if (!cartWhere.userId && !cartWhere.sessionId) {
+      throw createError('Cart is empty', 400);
+    }
+
     const cart = await prisma.cart.findUnique({
-      where: { userId: req.user.id },
+      where: cartWhere,
       include: {
         items: {
           include: { product: { select: { price: true, isActive: true } } },
@@ -174,8 +191,10 @@ export const createRazorpayOrder = asyncHandler(async (req, res, next) => {
       currency,
       receipt: `rcpt_${idempotencyKey.slice(0, 10)}`,
       notes: {
-        userId: req.user.id,
-        addressId,
+        userId: req.user?.id || null,
+        sessionId: req.cookies?.cart_session || null,
+        addressId: addressId || null,
+        guestAddress: guestAddress ? JSON.stringify(guestAddress) : null,
         notes: orderNotes || '',
         idempotencyKey,
       }
@@ -192,9 +211,6 @@ export const createRazorpayOrder = asyncHandler(async (req, res, next) => {
         detail: razorpayError?.error?.description || razorpayError?.message || 'Unknown Razorpay error'
       });
     }
-
-    // We don't create a Payment record in DB yet to keep it clean (Split flow)
-    // The payment record will be created during verification/webhook
 
     res.json({
       success: true,
@@ -221,6 +237,7 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
       razorpay_payment_id, 
       razorpay_signature, 
       addressId,
+      guestAddress,
       notes,
       idempotencyKey,
       orderId: serviceOrderId,
@@ -278,7 +295,7 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
       if (!existingPayment) {
         await prisma.payment.create({
           data: {
-            userId: req.user.id,
+            userId: req.user?.id || null,
             internalOrderId: serviceOrderId,
             orderType: 'SERVICE_ORDER',
             razorpayOrderId: razorpay_order_id,
@@ -326,12 +343,14 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
     if (!order) {
       // 3. Create Order if it doesn't exist yet
       order = await saveOrderToDB({
-        userId: req.user.id,
+        userId: req.user?.id || null,
         addressId,
+        guestAddress,
         notes,
         paymentMethod: 'RAZORPAY',
         paymentStatus: 'PAID',
-        user: req.user,
+        user: req.user || { name: guestAddress?.fullName, email: guestAddress?.email, phone: guestAddress?.phone },
+        sessionId: req.cookies?.cart_session || null,
       });
       await valkey.set(idemKey, order.id, 'EX', 600);
     }
@@ -341,7 +360,7 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
     if (!existingPayment) {
       await prisma.payment.create({
         data: {
-          userId: req.user.id,
+          userId: req.user?.id || null,
           internalOrderId: order.id,
           orderType: 'ORDER',
           razorpayOrderId: razorpay_order_id,
@@ -394,7 +413,7 @@ export const confirmCOD = asyncHandler(async (req, res) => {
     throw createError(`${orderType === 'ORDER' ? 'Order' : 'Service Order'} not found`, 404);
   }
 
-  if (orderData.userId !== req.user.id) {
+  if (orderData.userId && (!req.user || orderData.userId !== req.user.id)) {
     throw createError('Unauthorized', 403);
   }
 
@@ -414,7 +433,7 @@ export const confirmCOD = asyncHandler(async (req, res) => {
         }),
     prisma.payment.create({
       data: {
-        userId: req.user.id,
+        userId: req.user?.id || null,
         internalOrderId,
         orderType,
         amount: 0,
@@ -425,7 +444,7 @@ export const confirmCOD = asyncHandler(async (req, res) => {
     // Clear cart after successful COD product order
     ...(orderType === 'ORDER' ? [
       prisma.cart.update({
-        where: { userId: req.user.id },
+        where: req.user ? { userId: req.user.id } : { sessionId: req.cookies?.cart_session },
         data: { items: { deleteMany: {} } }
       })
     ] : [])
@@ -433,15 +452,19 @@ export const confirmCOD = asyncHandler(async (req, res) => {
 
   // Send notifications
   try {
-    const adminEmail = process.env.COMPANY_EMAIL || process.env.EMAIL_FROM;
-    const user = { name: req.user.name || 'Customer', email: req.user.email };
+    const adminEmail = process.env.COMPANY_EMAIL || process.env.EMAIL_FROM || 'photowalagiftphotowalagift@gmail.com';
+    const user = req.user
+      ? { name: req.user.name || 'Customer', email: req.user.email }
+      : { name: orderData.shippingName || orderData.guestName || 'Guest Customer', email: orderData.guestEmail || '' };
     
     if (orderType === 'ORDER') {
       const order = await prisma.order.findUnique({ where: { id: internalOrderId } });
       const tpl = emailTemplates.orderConfirmation(order, user);
       const adminTpl = emailTemplates.adminNewOrder(order, user);
       
-      sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
+      if (user.email) {
+        sendMail({ to: user.email, subject: tpl.subject, html: tpl.html }).catch(console.error);
+      }
       sendMail({ to: adminEmail, subject: adminTpl.subject, html: adminTpl.html }).catch(console.error);
       
       // Send admin transaction notification
@@ -507,7 +530,8 @@ export const razorpayWebhook = asyncHandler(async (req, res) => {
     const rzpPayment = payload.payment.entity;
     const razorpayOrderId = rzpPayment.order_id;
     const razorpayPaymentId = rzpPayment.id;
-    const { userId, addressId, notes, idempotencyKey } = rzpPayment.notes;
+    const { userId, sessionId, addressId, guestAddress: guestAddressStr, notes, idempotencyKey } = rzpPayment.notes;
+    const guestAddress = guestAddressStr ? JSON.parse(guestAddressStr) : null;
 
     if (!razorpayOrderId || !razorpayPaymentId || !idempotencyKey) {
       return res.status(200).json({ received: true });
@@ -523,16 +547,18 @@ export const razorpayWebhook = asyncHandler(async (req, res) => {
     }
 
     if (!order) {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user) return res.status(200).json({ received: true });
+      const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
+      const customer = user || { name: guestAddress?.fullName, email: guestAddress?.email, phone: guestAddress?.phone };
 
       order = await saveOrderToDB({
-        userId,
-        addressId,
+        userId: userId || null,
+        addressId: addressId || null,
+        guestAddress,
         notes,
         paymentMethod: 'RAZORPAY',
         paymentStatus: 'PAID',
-        user,
+        user: customer,
+        sessionId,
       });
       await valkey.set(idemKey, order.id, 'EX', 600);
     }
@@ -545,7 +571,7 @@ export const razorpayWebhook = asyncHandler(async (req, res) => {
     if (!existingPayment) {
       await prisma.payment.create({
         data: {
-          userId,
+          userId: userId || null,
           internalOrderId: order.id,
           orderType: 'ORDER',
           razorpayOrderId,

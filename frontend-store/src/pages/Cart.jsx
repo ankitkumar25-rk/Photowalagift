@@ -362,27 +362,17 @@ export default function Cart() {
 
 
                 {/* CTA */}
-                {user ? (
-                  <Link to="/checkout" className="btn-primary w-full justify-center mt-6 text-sm sm:text-base py-3.5 sm:py-4 gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all">
-                    <span>Proceed to Checkout</span>
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                  </Link>
-                ) : (
-                  <div className="mt-6 space-y-3">
-                    <Link
-                      to="/login?redirect=/checkout"
-                      className="btn-primary w-full justify-center text-base py-4 gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
-                    >
-                      <span>Login to Checkout</span>
-                      <ArrowRight className="w-5 h-5" />
+                <Link to="/checkout" className="btn-primary w-full justify-center mt-6 text-sm sm:text-base py-3.5 sm:py-4 gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all">
+                  <span>Proceed to Checkout</span>
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                </Link>
+                {!user && (
+                  <p className="text-center text-xs text-gray-500 font-medium mt-3 animate-pulse">
+                    Have an account?{' '}
+                    <Link to="/login?redirect=/checkout" className="text-brand-primary font-bold hover:text-brand-secondary transition-colors">
+                      Login for faster checkout
                     </Link>
-                    <p className="text-center text-xs text-gray-500 font-medium">
-                      or{' '}
-                      <Link to="/register" className="text-brand-primary font-bold hover:text-brand-secondary transition-colors">
-                        create account
-                      </Link>
-                    </p>
-                  </div>
+                  </p>
                 )}
               </div>
 

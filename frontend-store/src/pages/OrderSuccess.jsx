@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { CheckCircle, ShoppingBag, ArrowRight, Package, Calendar, CreditCard } from 'lucide-react';
-import { ordersApi } from '../api';
+import { ordersApi, productsApi } from '../api';
 import toast from 'react-hot-toast';
 
 export default function OrderSuccess() {
@@ -9,6 +9,7 @@ export default function OrderSuccess() {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState([]);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -26,6 +27,22 @@ export default function OrderSuccess() {
 
     if (orderId) fetchOrder();
   }, [orderId, navigate]);
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const { data } = await productsApi.featured();
+        const boughtIds = order?.items?.map(item => item.productId) || [];
+        const filtered = (data.data || []).filter(p => !boughtIds.includes(p.id)).slice(0, 3);
+        setRecommendations(filtered);
+      } catch (err) {
+        console.error('Failed to fetch recommendations:', err);
+      }
+    };
+    if (order) {
+      fetchRecommendations();
+    }
+  }, [order]);
 
   if (loading) {
     return (
@@ -134,9 +151,37 @@ export default function OrderSuccess() {
           </div>
         </div>
 
-        <p className="text-gray-500 text-xs mb-10 leading-relaxed max-w-[280px] mx-auto uppercase tracking-widest font-medium">
+        <p className="text-gray-500 text-xs mb-8 leading-relaxed max-w-[280px] mx-auto uppercase tracking-widest font-medium">
           A confirmation email has been sent to your registered address.
         </p>
+
+        {/* Recommended Products Upsell Section */}
+        {recommendations.length > 0 && (
+          <div className="mt-8 pt-8 border-t border-cream-200 text-left mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h3 className="font-outfit text-sm font-bold text-[#5b3f2f] mb-1">You Might Also Like...</h3>
+            <p className="text-[10px] text-gray-400 mb-4 uppercase tracking-wider font-semibold">Premium Personalized Gifts You Might Love</p>
+            
+            <div className="grid grid-cols-3 gap-3">
+              {recommendations.map((prod) => (
+                <Link 
+                  key={prod.id} 
+                  to={`/products/${prod.slug}`} 
+                  className="bg-[#faf8f5] border border-cream-150 rounded-2xl p-2 hover:shadow-md transition-all hover:scale-105 duration-300 flex flex-col group"
+                >
+                  <div className="aspect-square rounded-xl overflow-hidden bg-cream-100 mb-2 shrink-0">
+                    <img 
+                      src={prod.images?.[0]?.url || 'https://placehold.co/120x120?text=Gift'} 
+                      alt={prod.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    />
+                  </div>
+                  <h4 className="text-[9px] font-bold text-gray-800 truncate leading-snug group-hover:text-brand-secondary transition-colors">{prod.name}</h4>
+                  <p className="text-[9px] font-extrabold text-[#b88a2f] mt-0.5">₹{Number(prod.price).toFixed(0)}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex flex-col gap-4">

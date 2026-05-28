@@ -60,6 +60,38 @@ export const emailTemplates = {
     `,
   }),
 
+  shippingConfirmation: (order, user) => ({
+    subject: `Your Photowala Gift Order has been Shipped! 🚚`,
+    html: `
+      <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2e211c;">
+        <div style="background: #5a3f2f; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">Photowala Gift</h1>
+        </div>
+        <div style="padding: 40px; background: #fffdfb; border: 1px solid #f5e7d8; border-top: none; border-radius: 0 0 12px 12px;">
+          <h2 style="color: #5a3f2f; margin-top: 0;">Hi ${user.name}, your order has been shipped! 🚚</h2>
+          <p>Great news! Your premium personalized gift is handcrafted, packed, and on its way to you.</p>
+          
+          <div style="background: #f7f0e7; padding: 20px; border-radius: 8px; margin: 25px 0;">
+            <p style="margin: 5px 0;">Order Number: <strong>#${order.orderNumber}</strong></p>
+            <p style="margin: 5px 0;">Courier Partner: <strong>${order.courierName || 'Shiprocket Partner'}</strong></p>
+            <p style="margin: 5px 0;">Tracking Number: <strong>${order.trackingNumber || order.awbNumber || 'N/A'}</strong></p>
+          </div>
+          
+          <p>You can track your package live directly on our website using the link below:</p>
+          
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${process.env.CLIENT_URL}/orders/${order.id}" 
+               style="background: #5a3f2f; color: white; padding: 14px 28px; text-decoration: none; border-radius: 30px; display: inline-block; font-weight: bold; box-shadow: 0 4px 12px rgba(90, 63, 47, 0.2);">
+              Track My Order on Website ↗
+            </a>
+          </div>
+          
+          ${SHARED_FOOTER}
+        </div>
+      </div>
+    `,
+  }),
+
   welcomeEmail: (user) => ({
     subject: 'Welcome to Photowala Gift! 🎁',
     html: `

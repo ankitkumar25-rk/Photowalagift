@@ -767,19 +767,6 @@ export default function Account() {
               )}
             </div>
 
-            {/* Services history quick link */}
-            <div className="p-6 bg-brand-primary text-white rounded-2xl border border-brand-primary shadow-lg overflow-hidden relative">
-              <h3 className="font-bold flex items-center gap-2 mb-2">
-                <Settings className="w-4 h-4" /> Machine & Print Services
-              </h3>
-              <p className="text-xs text-white/80 mb-4">Track your custom printing and laser cutting requests.</p>
-              <button 
-                onClick={() => navigate('/account/services')}
-                className="w-full py-2 bg-white text-brand-primary rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg hover:scale-[1.02] transition-transform"
-              >
-                View Services Ledger
-              </button>
-            </div>
           </div>
         )}
 

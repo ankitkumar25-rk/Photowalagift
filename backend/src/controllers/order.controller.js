@@ -4,6 +4,7 @@ import { broadcastToAdmins } from '../services/notificationService.js';
 import { createError } from '../middleware/errorHandler.js';
 import { z } from 'zod';
 import { emailTemplates } from '../config/email.js';
+import { sendMail } from '../lib/mailer.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import valkey from '../lib/valkey.js';
 import crypto from 'crypto';
@@ -40,12 +41,26 @@ const laserPenOrderSchema = z.object({
 });
 
 export const createOrder = asyncHandler(async (req, res) => {
-  const { addressId, notes, paymentMethod, idempotencyKey } = z.object({
-    addressId: z.string().uuid(),
+  const { addressId, guestAddress, notes, paymentMethod, idempotencyKey } = z.object({
+    addressId: z.string().uuid().optional(),
+    guestAddress: z.object({
+      fullName: z.string().min(1),
+      phone: z.string().min(10).max(10),
+      email: z.string().email(),
+      line1: z.string().min(1),
+      line2: z.string().optional().nullable(),
+      city: z.string().min(1),
+      state: z.string().min(1),
+      pincode: z.string().min(6).max(6),
+    }).optional(),
     notes: z.string().optional(),
     paymentMethod: z.enum(['COD', 'RAZORPAY']).optional().default('RAZORPAY'),
     idempotencyKey: z.string().min(1),
   }).parse(req.body);
+
+  if (!addressId && !guestAddress) {
+    throw createError('Delivery address or guest details are required', 400);
+  }
 
   // 1. Idempotency Check
   const idemKey = `idem:order:${idempotencyKey}`;
@@ -56,19 +71,28 @@ export const createOrder = asyncHandler(async (req, res) => {
   }
 
   // 2. Fetch Cart for duplicate check and processing
+  const cartWhere = req.user
+    ? { userId: req.user.id }
+    : { sessionId: req.cookies?.cart_session };
+
+  if (!cartWhere.userId && !cartWhere.sessionId) {
+    throw createError('Cart is empty', 400);
+  }
+
   const cart = await prisma.cart.findUnique({
-    where: { userId: req.user.id },
+    where: cartWhere,
     include: { items: true },
   });
   if (!cart || cart.items.length === 0) throw createError('Cart is empty', 400);
 
-  // 3. Duplicate Check (Hash of userId + items)
+  // 3. Duplicate Check (Hash of userId/session + items)
   const itemsString = cart.items
     .sort((a, b) => a.productId.localeCompare(b.productId))
     .map(i => `${i.productId}:${i.quantity}`)
     .join('|');
-  const cartHash = crypto.createHash('md5').update(`${req.user.id}:${itemsString}`).digest('hex');
-  const dupKey = `order:dup:${req.user.id}:${cartHash}`;
+  const userIdent = req.user?.id || req.cookies?.cart_session || 'guest';
+  const cartHash = crypto.createHash('md5').update(`${userIdent}:${itemsString}`).digest('hex');
+  const dupKey = `order:dup:${userIdent}:${cartHash}`;
   
   const isDuplicate = await valkey.get(dupKey);
   if (isDuplicate) {
@@ -82,12 +106,14 @@ export const createOrder = asyncHandler(async (req, res) => {
   }
 
   const order = await saveOrderToDB({
-    userId: req.user.id,
+    userId: req.user?.id || null,
     addressId,
+    guestAddress,
     notes,
     paymentMethod: 'COD',
     paymentStatus: 'COD_PENDING',
-    user: req.user,
+    user: req.user || { name: guestAddress?.fullName, email: guestAddress?.email, phone: guestAddress?.phone },
+    sessionId: req.cookies?.cart_session || null,
   });
 
   // 5. Store Idempotency and Duplicate keys
@@ -142,7 +168,17 @@ export const getOrder = asyncHandler(async (req, res) => {
     });
   }
   if (!order) throw createError('Order not found', 404);
-  if (order.userId !== req.user.id && req.user.role === 'CUSTOMER') throw createError('Forbidden', 403);
+
+  // Permission Check
+  if (order.userId) {
+    if (!req.user || (order.userId !== req.user.id && req.user.role === 'CUSTOMER')) {
+      throw createError('Forbidden', 403);
+    }
+  } else {
+    // Guest order: since orderId / orderNumber is an unguessable UUID / custom string,
+    // we allow anyone with the secure ID to view it (required for guest checkout success tracking).
+  }
+
   res.json({ success: true, data: order });
 });
 
@@ -207,8 +243,23 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   const order = await prisma.order.update({
     where: { id: req.params.id },
-    data: updateData
+    data: updateData,
+    include: { user: true }
   });
+
+  if (status === 'SHIPPED') {
+    try {
+      const customerName = order.shippingName || order.guestName || order.user?.name || 'Customer';
+      const customerEmail = order.guestEmail || order.user?.email;
+      if (customerEmail) {
+        const tpl = emailTemplates.shippingConfirmation(order, { name: customerName, email: customerEmail });
+        sendMail({ to: customerEmail, subject: tpl.subject, html: tpl.html }).catch(console.error);
+      }
+    } catch (err) {
+      console.error('[Email] Failed to send shipping email:', err.message);
+    }
+  }
+
   res.json({ success: true, data: order });
 });
 
@@ -217,7 +268,20 @@ export const updateTracking = asyncHandler(async (req, res) => {
   const order = await prisma.order.update({
     where: { id: req.params.id },
     data: { trackingNumber, status: 'SHIPPED' },
+    include: { user: true }
   });
+
+  try {
+    const customerName = order.shippingName || order.guestName || order.user?.name || 'Customer';
+    const customerEmail = order.guestEmail || order.user?.email;
+    if (customerEmail) {
+      const tpl = emailTemplates.shippingConfirmation(order, { name: customerName, email: customerEmail });
+      sendMail({ to: customerEmail, subject: tpl.subject, html: tpl.html }).catch(console.error);
+    }
+  } catch (err) {
+    console.error('[Email] Failed to send shipping email:', err.message);
+  }
+
   res.json({ success: true, data: order });
 });
 
