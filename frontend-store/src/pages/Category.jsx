@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import { categoriesApi } from '../api';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 export default function Category() {
   const { slug } = useParams();
@@ -12,8 +13,22 @@ export default function Category() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
+  const categorySchema = data ? {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": data.name,
+    "description": data.description || `Premium handcrafted ${data.name} collection at Photowala Gift.`,
+    "url": window.location.href
+  } : null;
+
   return (
     <div className="min-h-screen bg-cream-100 pt-32 pb-24 px-4 luxury-grain relative overflow-hidden">
+      <SEO
+        title={data?.name || slug}
+        description={data?.description || `Explore our premium collection of ${data?.name || slug} at Photowala Gift. Handcrafted in Rajasthan, shipping across India.`}
+        keywords={`${data?.name || slug}, custom ${data?.name || slug}, buy ${data?.name || slug} online, personalised gifts India, Photowala Gift`}
+        schemaMarkup={categorySchema}
+      />
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-125 h-125 bg-brand-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
       <div className="absolute bottom-0 left-0 w-100 h-100 bg-brand-secondary/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4" />

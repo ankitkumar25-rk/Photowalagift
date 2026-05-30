@@ -11,6 +11,7 @@ import { GiTrophyCup } from 'react-icons/gi';
 import { brandAssets } from '../data/assets';
 import { productsApi, categoriesApi } from '../api';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 const HERO_IMAGES = [
   { id: 1, alt: 'Custom premium gifts and laser-engraved trophies in Rajasthan' },
@@ -216,8 +217,65 @@ export default function Home() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const homeSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://photowalagift.com/#website",
+        "url": "https://photowalagift.com",
+        "name": "Photowala Gift",
+        "description": "Premium E-commerce & Service Platform for Trophies, Mementos, and Personalised Photogifts in India.",
+        "potentialAction": [
+          {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://photowalagift.com/products?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        ],
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "Store",
+        "@id": "https://photowalagift.com/#organization",
+        "name": "Photowala Gift",
+        "url": "https://photowalagift.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://photowalagift.com/favicon-32x32.png"
+        },
+        "description": "Premium E-commerce & Service Platform for Trophies, Mementos, and Personalised Photogifts in Rajasthan, India.",
+        "telephone": "+91-8104937078",
+        "priceRange": "₹₹",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Ward No. 04, Kumawat Colony, Sithal Road, Tehsil - Gudha Gorji",
+          "addressLocality": "Chhaosari, Jhunjhunu",
+          "addressRegion": "Rajasthan",
+          "postalCode": "333012",
+          "addressCountry": "IN"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+91-8104937078",
+          "contactType": "customer support",
+          "email": "photowalagiftphotowalagift@gmail.com"
+        }
+      }
+    ]
+  };
+
   return (
     <div className="bg-cream-100 luxury-grain">
+      <SEO 
+        title="Premium Personalised Gifts, Trophies & Mementos"
+        description="Discover luxury custom trophies, wooden mementos, engraved plaques, photo frames, and personalized corporate gifts at Photowala Gift. Crafted in Rajasthan, shipped Pan-India."
+        keywords="personalised gifts India, custom trophies online, corporate awards, photo frames, wooden mementos, custom corporate gifts, Photowala Gift"
+        schemaMarkup={homeSchema}
+      />
       <HeroSection />
       <TrustBadges />
 

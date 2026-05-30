@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 
 import { useAuthStore, useCartStore } from './store';
 import Layout from './components/Layout';
@@ -120,76 +121,78 @@ export default function App() {
 
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <WishlistProvider>
-          <ScrollToTop />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: { fontFamily: 'DM Sans, sans-serif', borderRadius: '14px', border: '1px solid #efd3c1', background: '#fffdfb', color: '#2e211c' },
-              success: { style: { background: '#f1ffe9', color: '#36521f', border: '1px solid #b7d894' } },
-              error:   { style: { background: '#fff1ef', color: '#8f2d1d', border: '1px solid #f0b6aa' } },
-            }}
-          />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index                element={<Home />} />
-                <Route path="products"      element={<Products />} />
-                <Route path="products/:slug" element={<ProductDetail />} />
-                <Route path="categories/:slug" element={<Category />} />
-                <Route path="bulk-orders"   element={<BulkOrders />} />
-                <Route path="cart"          element={<Cart />} />
-                <Route path="login"         element={<Login />} />
-                <Route path="register"      element={<Register />} />
-                <Route path="verify-otp"    element={<VerifyOtp />} />
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <WishlistProvider>
+            <ScrollToTop />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: { fontFamily: 'DM Sans, sans-serif', borderRadius: '14px', border: '1px solid #efd3c1', background: '#fffdfb', color: '#2e211c' },
+                success: { style: { background: '#f1ffe9', color: '#36521f', border: '1px solid #b7d894' } },
+                error:   { style: { background: '#fff1ef', color: '#8f2d1d', border: '1px solid #f0b6aa' } },
+              }}
+            />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index                element={<Home />} />
+                  <Route path="products"      element={<Products />} />
+                  <Route path="products/:slug" element={<ProductDetail />} />
+                  <Route path="categories/:slug" element={<Category />} />
+                  <Route path="bulk-orders"   element={<BulkOrders />} />
+                  <Route path="cart"          element={<Cart />} />
+                  <Route path="login"         element={<Login />} />
+                  <Route path="register"      element={<Register />} />
+                  <Route path="verify-otp"    element={<VerifyOtp />} />
 
-                {/* Protected Routes */}
-                <Route path="checkout"  element={<Checkout />} />
-                <Route path="checkout/service" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
-                <Route path="services/confirmation/:serviceOrderId" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
-                <Route path="orders"    element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-                <Route path="orders/:id" element={<OrderDetail />} />
-                <Route path="orders/:orderId/success" element={<OrderSuccess />} />
-                <Route path="account"   element={<ProtectedRoute><Account /></ProtectedRoute>} />
-                <Route path="my-account" element={<Navigate to="/account" replace />} />
-                <Route path="account/services" element={<ProtectedRoute><MyServiceOrders /></ProtectedRoute>} />
-                <Route path="wishlist"  element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+                  {/* Protected Routes */}
+                  <Route path="checkout"  element={<Checkout />} />
+                  <Route path="checkout/service" element={<ProtectedRoute><ServiceCheckout /></ProtectedRoute>} />
+                  <Route path="services/confirmation/:serviceOrderId" element={<ProtectedRoute><ServiceConfirmation /></ProtectedRoute>} />
+                  <Route path="orders"    element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                  <Route path="orders/:id" element={<OrderDetail />} />
+                  <Route path="orders/:orderId/success" element={<OrderSuccess />} />
+                  <Route path="account"   element={<ProtectedRoute><Account /></ProtectedRoute>} />
+                  <Route path="my-account" element={<Navigate to="/account" replace />} />
+                  <Route path="account/services" element={<ProtectedRoute><MyServiceOrders /></ProtectedRoute>} />
+                  <Route path="wishlist"  element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
 
-                {/* Auth flow routes */}
-                <Route path="auth/success"     element={<AuthSuccess />} />
-                <Route path="track-order"      element={<TrackOrder />} />
-                <Route path="returns"          element={<Returns />} />
-                <Route path="faq"              element={<FAQ />} />
-                <Route path="services"         element={<ProtectedRoute><Services /></ProtectedRoute>} />
-                <Route path="services/custom-printing" element={<ProtectedRoute><CustomPrintingIndex /></ProtectedRoute>} />
-                <Route path="services/custom-printing/pen" element={<ProtectedRoute><LaserPrintedPen /></ProtectedRoute>} />
-                <Route path="services/custom-printing/letterhead" element={<ProtectedRoute><ComingSoon service="Letterhead" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/envelope" element={<ProtectedRoute><ComingSoon service="Envelope" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/sticker-labels" element={<ProtectedRoute><ComingSoon service="Sticker Labels" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/sticker-labels/:type" element={<ProtectedRoute><ComingSoon service="Sticker Labels" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/garment-tag" element={<ProtectedRoute><ComingSoon service="Garment Tag" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/garment-thread" element={<ProtectedRoute><ComingSoon service="Garment Thread" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/garment-gloss" element={<ProtectedRoute><ComingSoon service="Garment Gloss" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/garment-matt" element={<ProtectedRoute><ComingSoon service="Garment Matt" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/garment-uv" element={<ProtectedRoute><ComingSoon service="Garment UV" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/bill-book" element={<ProtectedRoute><ComingSoon service="Bill Book" /></ProtectedRoute>} />
-                <Route path="services/custom-printing/digital-printing" element={<ProtectedRoute><ComingSoon service="Digital Printing" /></ProtectedRoute>} />
-                <Route path="services/machine-services/co2-laser" element={<ProtectedRoute><CO2LaserService /></ProtectedRoute>} />
-                <Route path="services/machine-services/laser-marking" element={<ProtectedRoute><LaserMarkingService /></ProtectedRoute>} />
-                <Route path="services/machine-services/cnc-router" element={<ProtectedRoute><CNCRouterService /></ProtectedRoute>} />
+                  {/* Auth flow routes */}
+                  <Route path="auth/success"     element={<AuthSuccess />} />
+                  <Route path="track-order"      element={<TrackOrder />} />
+                  <Route path="returns"          element={<Returns />} />
+                  <Route path="faq"              element={<FAQ />} />
+                  <Route path="services"         element={<ProtectedRoute><Services /></ProtectedRoute>} />
+                  <Route path="services/custom-printing" element={<ProtectedRoute><CustomPrintingIndex /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/pen" element={<ProtectedRoute><LaserPrintedPen /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/letterhead" element={<ProtectedRoute><ComingSoon service="Letterhead" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/envelope" element={<ProtectedRoute><ComingSoon service="Envelope" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/sticker-labels" element={<ProtectedRoute><ComingSoon service="Sticker Labels" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/sticker-labels/:type" element={<ProtectedRoute><ComingSoon service="Sticker Labels" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/garment-tag" element={<ProtectedRoute><ComingSoon service="Garment Tag" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/garment-thread" element={<ProtectedRoute><ComingSoon service="Garment Thread" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/garment-gloss" element={<ProtectedRoute><ComingSoon service="Garment Gloss" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/garment-matt" element={<ProtectedRoute><ComingSoon service="Garment Matt" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/garment-uv" element={<ProtectedRoute><ComingSoon service="Garment UV" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/bill-book" element={<ProtectedRoute><ComingSoon service="Bill Book" /></ProtectedRoute>} />
+                  <Route path="services/custom-printing/digital-printing" element={<ProtectedRoute><ComingSoon service="Digital Printing" /></ProtectedRoute>} />
+                  <Route path="services/machine-services/co2-laser" element={<ProtectedRoute><CO2LaserService /></ProtectedRoute>} />
+                  <Route path="services/machine-services/laser-marking" element={<ProtectedRoute><LaserMarkingService /></ProtectedRoute>} />
+                  <Route path="services/machine-services/cnc-router" element={<ProtectedRoute><CNCRouterService /></ProtectedRoute>} />
 
-                <Route path="privacy"          element={<Privacy />} />
-                <Route path="forgot-password"  element={<ForgotPassword />} />
-                <Route path="reset-password"   element={<ResetPassword />} />
+                  <Route path="privacy"          element={<Privacy />} />
+                  <Route path="forgot-password"  element={<ForgotPassword />} />
+                  <Route path="reset-password"   element={<ResetPassword />} />
 
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </WishlistProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </WishlistProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }

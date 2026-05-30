@@ -1,0 +1,22 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Private/Utility Paths to Disallow
+Disallow: /checkout
+Disallow: /checkout/
+Disallow: /cart
+Disallow: /account
+Disallow: /account/
+Disallow: /orders
+Disallow: /orders/
+Disallow: /login
+Disallow: /register
+Disallow: /verify-otp
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /track-order
+Disallow: /auth/success
+
+# Sitemap link
+Sitemap: https://photowalagift.com/sitemap.xml

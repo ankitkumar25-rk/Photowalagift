@@ -4,6 +4,7 @@ import { SlidersHorizontal, X, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { productsApi, categoriesApi } from '../api';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 const SORT_OPTIONS = [
   { value: 'createdAt-desc', label: 'Newest First' },
@@ -69,8 +70,22 @@ export default function Products() {
     ? Array.from({ length: data.meta.totalPages }, (_, i) => i + 1)
     : [];
 
+  const shopSchema = {
+    "@context": "https://schema.org",
+    "@type": "SearchResultsPage",
+    "name": "Shop Personalised Gifts & Custom Trophies",
+    "description": "Explore Photowala Gift's catalog of premium personalized trophies, corporate awards, photo mugs, custom plaques, and engraved keepsakes. Secure checkouts and pan-India shipping.",
+    "url": window.location.href
+  };
+
   return (
     <div className="min-h-screen bg-cream-100 pt-24 md:pt-32 pb-24 px-4 luxury-grain relative overflow-hidden">
+      <SEO
+        title="Shop Premium Personalised Gifts & Custom Trophies"
+        description="Explore the Photowala Gift catalog for high-end custom trophies, wooden awards, photo mugs, printed plaques, and custom corporate gift solutions. Crafted with precision in India."
+        keywords="personalised gifts catalogue, custom trophies price, order corporate awards, buy photo mugs online, custom engraved plaques, Photowala Gift products"
+        schemaMarkup={shopSchema}
+      />
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-125 h-125 bg-brand-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
       <div className="absolute bottom-0 left-0 w-100 h-100 bg-brand-secondary/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4" />

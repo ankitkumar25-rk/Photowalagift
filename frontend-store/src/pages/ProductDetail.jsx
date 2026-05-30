@@ -15,6 +15,7 @@ import { productsApi, usersApi, uploadApi } from '../api';
 import { useCartStore, useAuthStore } from '../store';
 import { useWishlist } from '../contexts/WishlistContext';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 /* ------ helpers ------ */
 function StarRating({ rating, size = 'sm', interactive = false, onChange }) {
@@ -354,8 +355,44 @@ export default function ProductDetail() {
     { id: 'reviews',     label: `Reviews (${product._count?.reviews || 0})` },
   ];
 
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.images?.map(img => img.url) || [],
+    "description": product.shortDesc || product.description || 'Premium custom engraved trophies, awards, or mementos from Photowala Gift.',
+    "sku": product.sku || `PWG-${product.id}`,
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "INR",
+      "price": product.price,
+      "priceValidUntil": "2030-12-31",
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Photowala Gift"
+      }
+    },
+    ...(product.reviews?.length > 0 ? {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": avg.toFixed(1),
+        "reviewCount": product.reviews.length
+      }
+    } : {})
+  };
+
   return (
     <div className="min-h-screen bg-cream-100 page-enter">
+      <SEO
+        title={product.name}
+        description={product.shortDesc || `Buy ${product.name} online at Photowala Gift. High-quality custom printed or engraved options with quick delivery in India.`}
+        image={product.images?.[0]?.url || '/images/og-default.jpg'}
+        keywords={`${product.name}, buy ${product.name} online, personalised ${product.category?.name || 'gifts'}, custom gifts India, Photowala Gift`}
+        schemaMarkup={productSchema}
+      />
       {/* Breadcrumb */}
       <div className="bg-white border-b border-cream-200">
         <div className="max-w-7xl mx-auto px-4 py-3">
