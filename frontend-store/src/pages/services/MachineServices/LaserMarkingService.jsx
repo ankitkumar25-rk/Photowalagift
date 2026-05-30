@@ -8,6 +8,7 @@ import {
 import api from '../../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store';
+import { toast } from 'react-hot-toast';
 
 const MATERIAL_TYPES = ['Stainless Steel', 'Aluminum', 'Brass/Copper', 'Titanium', 'Anodized Metal', 'Industrial Plastics'];
 const MARKING_TYPES = ['Surface Etching', 'Deep Engraving', 'Color Annealing (SS)', 'Carbonizing'];
@@ -46,6 +47,11 @@ export default function LaserMarkingService() {
 
   const handleAddOrder = async () => {
     if (!canOrder) return;
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     try {
       setLoading(true);
       let fileUrl = '';

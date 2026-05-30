@@ -164,23 +164,23 @@ export default function App() {
                   <Route path="track-order"      element={<TrackOrder />} />
                   <Route path="returns"          element={<Returns />} />
                   <Route path="faq"              element={<FAQ />} />
-                  <Route path="services"         element={<ProtectedRoute><Services /></ProtectedRoute>} />
-                  <Route path="services/custom-printing" element={<ProtectedRoute><CustomPrintingIndex /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/pen" element={<ProtectedRoute><LaserPrintedPen /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/letterhead" element={<ProtectedRoute><ComingSoon service="Letterhead" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/envelope" element={<ProtectedRoute><ComingSoon service="Envelope" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/sticker-labels" element={<ProtectedRoute><ComingSoon service="Sticker Labels" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/sticker-labels/:type" element={<ProtectedRoute><ComingSoon service="Sticker Labels" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/garment-tag" element={<ProtectedRoute><ComingSoon service="Garment Tag" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/garment-thread" element={<ProtectedRoute><ComingSoon service="Garment Thread" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/garment-gloss" element={<ProtectedRoute><ComingSoon service="Garment Gloss" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/garment-matt" element={<ProtectedRoute><ComingSoon service="Garment Matt" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/garment-uv" element={<ProtectedRoute><ComingSoon service="Garment UV" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/bill-book" element={<ProtectedRoute><ComingSoon service="Bill Book" /></ProtectedRoute>} />
-                  <Route path="services/custom-printing/digital-printing" element={<ProtectedRoute><ComingSoon service="Digital Printing" /></ProtectedRoute>} />
-                  <Route path="services/machine-services/co2-laser" element={<ProtectedRoute><CO2LaserService /></ProtectedRoute>} />
-                  <Route path="services/machine-services/laser-marking" element={<ProtectedRoute><LaserMarkingService /></ProtectedRoute>} />
-                  <Route path="services/machine-services/cnc-router" element={<ProtectedRoute><CNCRouterService /></ProtectedRoute>} />
+                  <Route path="services"         element={<Services />} />
+                  <Route path="services/custom-printing" element={<CustomPrintingIndex />} />
+                  <Route path="services/custom-printing/pen" element={<LaserPrintedPen />} />
+                  <Route path="services/custom-printing/letterhead" element={<ComingSoon service="Letterhead" />} />
+                  <Route path="services/custom-printing/envelope" element={<ComingSoon service="Envelope" />} />
+                  <Route path="services/custom-printing/sticker-labels" element={<ComingSoon service="Sticker Labels" />} />
+                  <Route path="services/custom-printing/sticker-labels/:type" element={<ComingSoon service="Sticker Labels" />} />
+                  <Route path="services/custom-printing/garment-tag" element={<ComingSoon service="Garment Tag" />} />
+                  <Route path="services/custom-printing/garment-thread" element={<ComingSoon service="Garment Thread" />} />
+                  <Route path="services/custom-printing/garment-gloss" element={<ComingSoon service="Garment Gloss" />} />
+                  <Route path="services/custom-printing/garment-matt" element={<ComingSoon service="Garment Matt" />} />
+                  <Route path="services/custom-printing/garment-uv" element={<ComingSoon service="Garment UV" />} />
+                  <Route path="services/custom-printing/bill-book" element={<ComingSoon service="Bill Book" />} />
+                  <Route path="services/custom-printing/digital-printing" element={<ComingSoon service="Digital Printing" />} />
+                  <Route path="services/machine-services/co2-laser" element={<CO2LaserService />} />
+                  <Route path="services/machine-services/laser-marking" element={<LaserMarkingService />} />
+                  <Route path="services/machine-services/cnc-router" element={<CNCRouterService />} />
 
                   <Route path="privacy"          element={<Privacy />} />
                   <Route path="forgot-password"  element={<ForgotPassword />} />

@@ -8,6 +8,7 @@ import api from '../../../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../../store';
 import { serviceAssets } from '../../../../data/assets';
+import { toast } from 'react-hot-toast';
 
 import {
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature,
@@ -102,7 +103,12 @@ export default function LaserPrintedPen() {
 
   const handleAddOrder = async () => {
     if (!canOrder) return;
-
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+ 
     try {
       setLoading(true);
       let fileUrl = '';

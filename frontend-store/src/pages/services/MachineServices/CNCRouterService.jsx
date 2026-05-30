@@ -8,6 +8,7 @@ import {
 import api from '../../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store';
+import { toast } from 'react-hot-toast';
 
 const MATERIAL_TYPES = ['Solid Wood', 'Plywood / MDF', 'Acrylic Sheets', 'Aluminum Composite (ACP)', 'PVC / Foam Board', 'Solid Surface (Corian)'];
 const PROCESS_TYPES = ['2D Profile Cutting', '3D Carving / Bas-Relief', 'Drilling & Pocketing', 'V-Groove Folding'];
@@ -46,6 +47,11 @@ export default function CNCRouterService() {
 
   const handleAddOrder = async () => {
     if (!canOrder) return;
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     try {
       setLoading(true);
       let fileUrl = '';

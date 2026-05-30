@@ -8,6 +8,7 @@ import {
 import api from '../../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store';
+import { toast } from 'react-hot-toast';
 
 const MATERIAL_TYPES = ['Wood', 'Acrylic', 'Leather', 'MDF', 'Fabric', 'Paper/Cardboard'];
 const THICKNESS_OPTIONS = ['1mm', '2mm', '3mm', '4mm', '5mm', '6mm', '8mm', '10mm'];
@@ -46,6 +47,11 @@ export default function CO2LaserService() {
 
   const handleAddOrder = async () => {
     if (!canOrder) return;
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     try {
       setLoading(true);
       let fileUrl = '';
