@@ -19,4 +19,4 @@ Disallow: /track-order
 Disallow: /auth/success
 
 # Sitemap link
-Sitemap: https://photowalagift.com/sitemap.xml
+Sitemap: https://photowalagift.online/sitemap.xml

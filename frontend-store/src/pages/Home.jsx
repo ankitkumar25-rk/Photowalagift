@@ -222,8 +222,8 @@ export default function Home() {
     "@graph": [
       {
         "@type": "WebSite",
-        "@id": "https://photowalagift.com/#website",
-        "url": "https://photowalagift.com",
+        "@id": "https://photowalagift.online/#website",
+        "url": "https://photowalagift.online",
         "name": "Photowala Gift",
         "description": "Premium E-commerce & Service Platform for Trophies, Mementos, and Personalised Photogifts in India.",
         "potentialAction": [
@@ -231,7 +231,7 @@ export default function Home() {
             "@type": "SearchAction",
             "target": {
               "@type": "EntryPoint",
-              "urlTemplate": "https://photowalagift.com/products?search={search_term_string}"
+              "urlTemplate": "https://photowalagift.online/products?search={search_term_string}"
             },
             "query-input": "required name=search_term_string"
           }
@@ -240,12 +240,12 @@ export default function Home() {
       },
       {
         "@type": "Store",
-        "@id": "https://photowalagift.com/#organization",
+        "@id": "https://photowalagift.online/#organization",
         "name": "Photowala Gift",
-        "url": "https://photowalagift.com",
+        "url": "https://photowalagift.online",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://photowalagift.com/favicon-32x32.png"
+          "url": "https://photowalagift.online/favicon-32x32.png"
         },
         "description": "Premium E-commerce & Service Platform for Trophies, Mementos, and Personalised Photogifts in Rajasthan, India.",
         "telephone": "+91-8104937078",
