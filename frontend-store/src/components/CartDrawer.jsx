@@ -13,7 +13,7 @@ export default function CartDrawer() {
     return () => window.removeEventListener('keydown', handler);
   }, [closeCart]);
 
-  const shipping = subtotal() >= 1000 ? 0 : 49;
+  const shipping = 0; // Free shipping on all orders!
   const total = subtotal() + shipping;
 
   return (

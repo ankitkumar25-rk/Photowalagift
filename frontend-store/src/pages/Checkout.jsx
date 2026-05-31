@@ -443,7 +443,7 @@ export default function Checkout() {
   const isProfileComplete = useAuthStore((s) => s.isProfileComplete?.() || false);
 
   const subtotal = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
-  const shipping = subtotal >= 1000 ? 0 : 49;
+  const shipping = 0; // Free shipping on all orders!
   const total    = subtotal + shipping;
 
   const loadAddresses = useCallback(async () => {

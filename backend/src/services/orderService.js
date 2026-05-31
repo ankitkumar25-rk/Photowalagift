@@ -85,7 +85,7 @@ export const saveOrderToDB = async ({ userId, addressId, guestAddress, notes, pa
       customizationImageUrl: item.customizationImageUrl || null,
     });
   }
-  const shippingCost = subtotal >= 1000 ? 0 : 49;
+  const shippingCost = 0; // Free shipping on all orders!
   const total = subtotal + shippingCost;
 
   const order = await prisma.$transaction(async (tx) => {

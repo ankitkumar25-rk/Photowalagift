@@ -169,7 +169,7 @@ export default function Cart() {
   const user      = useAuthStore((s) => s.user);
 
   const subtotal = subtotalFn();
-  const shipping = subtotal >= 1000 ? 0 : 49;
+  const shipping = 0; // Free shipping on all orders!
   const total    = subtotal + shipping;
   const freeShipRemaining = 1000 - subtotal;
   const freeShipProgress  = Math.min((subtotal / 1000) * 100, 100);

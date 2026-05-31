@@ -182,7 +182,7 @@ export const createRazorpayOrder = asyncHandler(async (req, res, next) => {
       if (!item.product.isActive) throw createError('One or more items in cart are no longer available', 400);
       subtotal += Number(item.product.price) * item.quantity;
     }
-    const shippingCost = subtotal >= 1000 ? 0 : 49;
+    const shippingCost = 0; // Free shipping on all orders!
     const total = subtotal + shippingCost;
     const amountInPaise = Math.round(total * 100);
 
