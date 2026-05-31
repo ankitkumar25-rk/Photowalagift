@@ -204,6 +204,7 @@ export default function ProductDetail() {
   const [related, setRelated]   = useState([]);
   const [qty, setQty]           = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [reviewsShown, setReviewsShown] = useState(4);
 
@@ -237,7 +238,7 @@ export default function ProductDetail() {
 
   useEffect(() => { fetchProduct(); setQty(1); }, [fetchProduct]);
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (redirectToCheckOut = false) => {
     // Validate customization if enabled
     if (customizeEnabled) {
       if (customizeMode === 'text' && !customizationText.trim()) {
@@ -249,7 +250,13 @@ export default function ProductDetail() {
         return;
       }
     }
-    setAddingToCart(true);
+    
+    if (redirectToCheckOut) {
+      setBuyingNow(true);
+    } else {
+      setAddingToCart(true);
+    }
+
     try {
       const customization = customizeEnabled
         ? (customizeMode === 'text'
@@ -257,16 +264,24 @@ export default function ProductDetail() {
             : { customizationImageUrl: customizationImage.url })
         : {};
       await addItem(product.id, qty, customization);
-      toast.success(
-        <div className="flex items-center gap-2">
-          <Check className="w-4 h-4 text-green-600" />
-          <span><b>{product.name}</b> added to cart!</span>
-        </div>,
-        { duration: 3000 }
-      );
+      
+      if (redirectToCheckOut) {
+        navigate('/checkout');
+      } else {
+        toast.success(
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-green-600" />
+            <span><b>{product.name}</b> added to cart!</span>
+          </div>,
+          { duration: 3000 }
+        );
+      }
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to add to cart');
-    } finally { setAddingToCart(false); }
+    } finally {
+      setAddingToCart(false);
+      setBuyingNow(false);
+    }
   };
 
   const inWishlist = product ? isWishlisted(product.id) : false;
@@ -609,45 +624,68 @@ export default function ProductDetail() {
                   </p>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="space-y-3">
+                  {/* Buy Now Button (Primary Solid Hero Button) */}
                   <button
-                    onClick={handleAddToCart}
-                    disabled={addingToCart}
-                    className="btn-primary flex-1 justify-center py-3.5 text-base gap-2"
-                    id={`add-to-cart-${product.id}`}
+                    onClick={() => handleAddToCart(true)}
+                    disabled={addingToCart || buyingNow}
+                    className="w-full bg-brand-primary text-white py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/20 hover:bg-brand-deep active:scale-98 transition-all cursor-pointer"
                   >
-                    {addingToCart ? (
+                    {buyingNow ? (
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Adding...
+                        Processing Checkout...
                       </span>
                     ) : (
                       <>
-                        <ShoppingCart className="w-5 h-5" /> Add to Cart
+                        <Check className="w-5 h-5" /> Buy Now (Direct Checkout)
                       </>
                     )}
                   </button>
 
-                  <button
-                    onClick={toggleWishlist}
-                    disabled={isWishlistPending}
-                    className={`w-14 rounded-2xl border-2 flex items-center justify-center transition-all ${
-                      inWishlist
-                        ? 'border-red-400 bg-red-50 text-red-500 hover:bg-red-100'
-                        : 'border-cream-300 hover:border-red-300 text-gray-400 hover:text-red-400 hover:bg-red-50'
-                    }`}
-                    aria-label="Wishlist"
-                  >
-                    <Heart className={`w-5 h-5 ${inWishlist ? 'fill-red-400 text-red-400' : ''}`} />
-                  </button>
+                  <div className="flex gap-3">
+                    {/* Add to Cart Button (Secondary Outline Button) */}
+                    <button
+                      onClick={() => handleAddToCart(false)}
+                      disabled={addingToCart || buyingNow}
+                      className="flex-1 py-3.5 border-2 border-brand-primary text-brand-primary font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 hover:bg-brand-surface active:scale-98 transition-all cursor-pointer"
+                      id={`add-to-cart-${product.id}`}
+                    >
+                      {addingToCart ? (
+                        <span className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                          Adding...
+                        </span>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-4 h-4" /> Add to Cart
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    onClick={shareProduct}
-                    className="w-14 rounded-2xl border-2 border-cream-300 flex items-center justify-center text-gray-400 hover:text-brand-primary hover:border-brand-secondary hover:bg-brand-surface transition-all"
-                    aria-label="Share"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </button>
+                    {/* Wishlist Button */}
+                    <button
+                      onClick={toggleWishlist}
+                      disabled={isWishlistPending}
+                      className={`w-14 rounded-2xl border-2 flex items-center justify-center transition-all cursor-pointer ${
+                        inWishlist
+                          ? 'border-red-400 bg-red-50 text-red-500 hover:bg-red-100'
+                          : 'border-cream-300 hover:border-red-300 text-gray-400 hover:text-red-400 hover:bg-red-50'
+                      }`}
+                      aria-label="Wishlist"
+                    >
+                      <Heart className={`w-5 h-5 ${inWishlist ? 'fill-red-400 text-red-400' : ''}`} />
+                    </button>
+
+                    {/* Share Button */}
+                    <button
+                      onClick={shareProduct}
+                      className="w-14 rounded-2xl border-2 border-cream-300 flex items-center justify-center text-gray-400 hover:text-brand-primary hover:border-brand-secondary hover:bg-brand-surface transition-all cursor-pointer"
+                      aria-label="Share"
+                    >
+                      <Share2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
