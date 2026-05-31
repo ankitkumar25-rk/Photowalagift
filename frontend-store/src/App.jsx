@@ -127,7 +127,7 @@ export default function App() {
           <WishlistProvider>
             <ScrollToTop />
             <Toaster
-              position="top-right"
+              position="bottom-right"
               toastOptions={{
                 style: { fontFamily: 'DM Sans, sans-serif', borderRadius: '14px', border: '1px solid #efd3c1', background: '#fffdfb', color: '#2e211c' },
                 success: { style: { background: '#f1ffe9', color: '#36521f', border: '1px solid #b7d894' } },
