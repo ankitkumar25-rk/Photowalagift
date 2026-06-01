@@ -17,6 +17,7 @@ import { useAuthStore } from '../store';
 import { loadRazorpayScript } from '../utils/razorpay';
 import { useGoogleMaps } from '../hooks/useGoogleMaps';
 import api from '../api/client'; // axiosInstance
+import { trackInitiateCheckout, trackPurchase } from '../utils/metaPixel';
 
 /* -- Inline address form component -- */
 function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
@@ -506,6 +507,12 @@ export default function Checkout() {
     if (items.length === 0 && step !== 3) navigate('/cart');
   }, [items, step, navigate]);
 
+  useEffect(() => {
+    if (items.length > 0) {
+      trackInitiateCheckout(total, items.length);
+    }
+  }, []);
+
   const addAddress = async (form) => {
     if (user) {
       try {
@@ -640,6 +647,9 @@ export default function Checkout() {
   };
 
   const handlePaymentSuccess = async (method, orderId) => {
+    // Track Purchase in Meta Pixel
+    trackPurchase(orderId, total);
+
     // 1. Clear the cart immediately
     await clearCart();
 

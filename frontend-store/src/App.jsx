@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+import { initMetaPixel, trackPageView } from './utils/metaPixel';
 
 import { useAuthStore, useCartStore } from './store';
 import Layout from './components/Layout';
@@ -74,8 +75,17 @@ function PageLoader() {
   );
 }
 
+function RouteTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView();
+  }, [location]);
+  return null;
+}
+
 export default function App() {
   useEffect(() => {
+    initMetaPixel();
     // IMPORTANT: If we just returned from OAuth, store URL tokens BEFORE any auth calls.
     // This prevents a race where the app mounts and calls /auth/me without tokens.
     try {
@@ -124,6 +134,7 @@ export default function App() {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <RouteTracker />
           <WishlistProvider>
             <ScrollToTop />
             <Toaster

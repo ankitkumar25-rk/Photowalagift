@@ -16,6 +16,7 @@ import { useCartStore, useAuthStore } from '../store';
 import { useWishlist } from '../contexts/WishlistContext';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
+import { trackViewContent, trackAddToCart } from '../utils/metaPixel';
 
 /* ------ helpers ------ */
 function StarRating({ rating, size = 'sm', interactive = false, onChange }) {
@@ -221,6 +222,7 @@ export default function ProductDetail() {
     try {
       const { data } = await productsApi.getBySlug(slug);
       setProduct(data.data);
+      trackViewContent(data.data);
       // Fetch related products from same category
       if (data.data.category?.slug) {
         productsApi.list({ category: data.data.category.slug, limit: 4 })
@@ -264,6 +266,7 @@ export default function ProductDetail() {
             : { customizationImageUrl: customizationImage.url })
         : {};
       await addItem(product.id, qty, customization);
+      trackAddToCart(product, qty);
       
       if (redirectToCheckOut) {
         navigate('/checkout');
