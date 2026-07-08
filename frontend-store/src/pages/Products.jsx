@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SlidersHorizontal, X, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -63,6 +63,24 @@ export default function Products() {
     queryFn:  () => categoriesApi.list().then((r) => r.data.data),
     staleTime: 1000 * 60 * 30, // 30 minutes - categories change rarely
   });
+
+  const shuffledProducts = useMemo(() => {
+    if (!data?.data) return [];
+    const hasSearch = !!filters.search;
+    const hasMinPrice = !!filters.minPrice;
+    const hasMaxPrice = !!filters.maxPrice;
+    const isDefaultSort = sortValue === 'createdAt-desc';
+
+    if (isDefaultSort && !hasSearch && !hasMinPrice && !hasMaxPrice) {
+      const arr = [...data.data];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    return data.data;
+  }, [data?.data, sortValue, filters]);
 
 
 
@@ -285,7 +303,7 @@ export default function Products() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {data?.data?.map((product) => (
+              {shuffledProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>

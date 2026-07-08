@@ -43,9 +43,14 @@ export default function VerifyOtp() {
         otp
       });
       toast.success('Account verified successfully!');
-      
+      // Save tokens
+      const accessToken = data?.data?.accessToken || data?.accessToken;
+      const refreshToken = data?.data?.refreshToken || data?.refreshToken;
+      if (accessToken) localStorage.setItem('token', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
       // Update auth store with the new user data
-        setUser(data.data.user);
+      setUser(data.data.user);
       
       navigate(redirect);
     } catch (err) {

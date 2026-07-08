@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Loader } from 'lucide-react';
 import { brandAssets } from '../data/assets';
 import api from '../api/client';
+import { useAuthStore } from '../store';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -12,8 +13,15 @@ export default function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
+  const user = useAuthStore((s) => s.user);
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
   const googleAuthUrl = `${apiBaseUrl}/auth/google?redirect=${encodeURIComponent(redirect)}`;
+
+  useEffect(() => {
+    if (user) {
+      navigate(redirect, { replace: true });
+    }
+  }, [user, navigate, redirect]);
 
   const getPasswordStrength = (pw) => {
     let score = 0;

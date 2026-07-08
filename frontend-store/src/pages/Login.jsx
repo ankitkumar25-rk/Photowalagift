@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import toast from 'react-hot-toast';
@@ -9,12 +9,19 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const login = useAuthStore((s) => s.login);
+  const user = useAuthStore((s) => s.user);
   const isLoading = useAuthStore((s) => s.isLoading);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
   const googleAuthUrl = `${apiBaseUrl}/auth/google?redirect=${encodeURIComponent(redirect)}`;
+
+  useEffect(() => {
+    if (user) {
+      navigate(redirect, { replace: true });
+    }
+  }, [user, navigate, redirect]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,8 +31,8 @@ export default function Login() {
     };
     try {
       await login(trimmedForm);
-      toast.success('Welcome back! 🎉');
-      navigate(redirect, { replace: true });
+      toast.success('Welcome back! ');
+      // The useEffect will handle redirecting once user state is set
     } catch (err) {
       if (err?.response?.status === 403 && err?.response?.data?.message?.includes('verify')) {
         toast.error('Please verify your email first.');

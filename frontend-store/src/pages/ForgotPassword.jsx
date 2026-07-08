@@ -1,14 +1,23 @@
-﻿import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { brandAssets } from '../data/assets';
 import api from '../api/client';
+import { useAuthStore } from '../store';
 
 export default function ForgotPassword() {
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const [email, setEmail]       = useState('');
   const [sent, setSent]         = useState(false);
   const [loading, setLoading]   = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

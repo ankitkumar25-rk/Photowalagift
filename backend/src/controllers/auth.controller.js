@@ -225,6 +225,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
     prisma.refreshToken.deleteMany({ where: { userId: resetRecord.userId } }),
   ]);
 
+  res.clearCookie('access_token', COOKIE_OPTS);
+  res.clearCookie('refresh_token', REFRESH_COOKIE_OPTS);
   res.json({ success: true, message: 'Password reset successfully. Please log in again.' });
 });
 

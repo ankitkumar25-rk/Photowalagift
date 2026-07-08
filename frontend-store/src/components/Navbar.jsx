@@ -34,11 +34,10 @@ export default function Navbar() {
     { to: '/bulk-orders', label: 'Bulk Deals', badge: 'New' },
   ];
 
-  const headerClass = `sticky top-0 z-50 border-b transition-all duration-300 ${
-    isScrolled
-      ? 'glass-surface border-brand-primary/20 shadow-[0_10px_30px_-20px_rgba(122,50,24,0.5)]'
-      : 'bg-cream-100/90 backdrop-blur-lg border-brand-primary/10'
-  }`;
+  const headerClass = `sticky top-0 z-50 border-b transition-all duration-300 ${isScrolled
+    ? 'glass-surface border-brand-primary/20 shadow-[0_10px_30px_-20px_rgba(122,50,24,0.5)]'
+    : 'bg-cream-100/90 backdrop-blur-lg border-brand-primary/10'
+    }`;
 
   return (
     <header className={headerClass}>
@@ -133,7 +132,7 @@ export default function Navbar() {
                   <div className="absolute right-0 top-12 w-48 bg-cream-50 rounded-2xl shadow-lg border border-brand-primary/20 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <Link to="/account" className="block px-4 py-2 text-sm text-brand-primary hover:bg-brand-surface font-medium">My Account</Link>
                     {['ADMIN', 'SUPER_ADMIN'].includes(user.role) && (
-                      <a href="https://photowala-three.vercel.app/admin" target="_blank" rel="noopener noreferrer" className="block px-4 py-2 text-sm text-brand-secondary hover:bg-brand-surface font-bold">Admin Panel</a>
+                      <a href="https://admin.photowalagift.online/" target="_blank" rel="noopener noreferrer" className="block px-4 py-2 text-sm text-brand-secondary hover:bg-brand-surface font-bold">Admin Panel</a>
                     )}
                     <Link to="/orders" className="block px-4 py-2 text-sm text-brand-primary hover:bg-brand-surface font-medium">My Orders</Link>
                     <Link to="/account/services" className="block px-4 py-2 text-sm text-brand-primary hover:bg-brand-surface font-medium">My Services</Link>
@@ -142,8 +141,8 @@ export default function Navbar() {
                   </div>
                 </div>
               ) : (
-                <Link to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} className="btn-primary py-2 rounded-3xl px-4 text-xs">
-                  <User className="w-4 h-4" /> Login
+                <Link to={`/register?redirect=${encodeURIComponent(location.pathname + location.search)}`} className="btn-primary py-2 rounded-3xl px-4 text-xs">
+                  <User className="w-4 h-4" /> Sign Up
                 </Link>
               )}
             </div>
@@ -229,11 +228,11 @@ export default function Navbar() {
               )}
               {!isHydrating && !user && (
                 <Link
-                  to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+                  to={`/register?redirect=${encodeURIComponent(location.pathname + location.search)}`}
                   onClick={() => setMenuOpen(false)}
                   className="block px-4 py-2 text-sm font-semibold text-brand-primary rounded-lg hover:bg-brand-surface hover:text-brand-secondary transition-colors"
                 >
-                  Sign In
+                  Sign Up
                 </Link>
               )}
             </div>

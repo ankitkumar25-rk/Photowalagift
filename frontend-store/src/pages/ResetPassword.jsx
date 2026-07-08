@@ -1,9 +1,10 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { brandAssets } from '../data/assets';
 import api from '../api/client';
+import { useAuthStore } from '../store';
 
 export default function ResetPassword() {
   const [params]              = useSearchParams();
@@ -35,6 +36,17 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await api.post('/auth/reset-password', { token, password });
+      
+      // Clear frontend auth state completely
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('auth-storage');
+        useAuthStore.getState().setUser(null);
+      } catch (e) {
+        console.warn('Failed to clear auth state:', e);
+      }
+
       setDone(true);
       setTimeout(() => navigate('/login', { replace: true }), 3000);
     } catch (err) {

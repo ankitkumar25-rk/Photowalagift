@@ -5,8 +5,8 @@ import {
   ShoppingBag, ArrowLeft, X, ChevronDown, ChevronUp, ChevronRight,
   Shield, Tag, Info, CreditCard, Banknote, CheckCircle, AlertCircle, LoaderCircle
 } from 'lucide-react';
-import { 
-  MdSecurity, MdLocalShipping, MdAssignmentReturn 
+import {
+  MdSecurity, MdLocalShipping, MdAssignmentReturn
 } from 'react-icons/md';
 import toast from 'react-hot-toast';
 import axios from 'axios'; // For external pincode API
@@ -23,7 +23,7 @@ import { trackInitiateCheckout, trackPurchase } from '../utils/metaPixel';
 function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
   const user = useAuthStore((s) => s.user);
   const isGuest = !user;
-  
+
   const [form, setForm] = useState({
     label: 'Home',
     fullName: user?.name || '',
@@ -36,16 +36,16 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
     pincode: user?.pincode || '',
     isDefault: false,
   });
-  
+
   const [saving, setSaving] = useState(false);
-  
+
   // Pincode & Autofill States
   const [pincodeStatus, setPincodeStatus] = useState(form.pincode && form.pincode.length === 6 ? 'success' : 'idle');
   const [postOffices, setPostOffices] = useState([]);
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const [showAreaHelper, setShowAreaHelper] = useState(false);
   const [pincodeStatusText, setPincodeStatusText] = useState('');
-  
+
   const [autoFilledFields, setAutoFilledFields] = useState({
     line1: false,
     city: false,
@@ -65,10 +65,10 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
   const handleFieldChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    
+
     // Once user types, remove the auto-filled visual highlight
     setAutoFilledFields(prev => ({ ...prev, [name]: false }));
-    
+
     if (name === 'line1') {
       setShowAreaHelper(false);
     }
@@ -91,7 +91,7 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       setPostOffices([]);
       setShowAreaDropdown(false);
       setShowAreaHelper(false);
-      
+
       // Clear line1, city, state back to empty
       setForm(prev => ({
         ...prev,
@@ -112,10 +112,10 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       if (value === lastSearchedPincode.current) {
         return;
       }
-      
+
       setPincodeStatus('loading');
       setPincodeStatusText('Fetching location details...');
-      
+
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
@@ -127,7 +127,7 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
 
           lastSearchedPincode.current = value;
           setPincodeStatus('success');
-          
+
           const firstArea = data.postOffices && data.postOffices.length > 0 ? data.postOffices[0] : '';
           setPincodeStatusText(`📍 ${firstArea || data.city}, ${data.city}, ${data.state}`);
 
@@ -207,29 +207,19 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
   return (
     <form onSubmit={submit} className="space-y-6 bg-cream-50/30 p-5 sm:p-6 rounded-3xl border border-cream-200 animate-in fade-in duration-300">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Enter Delivery Details</p>
-      <div className="flex gap-2">
-        {['Home', 'Work', 'Other'].map((l) => (
-          <button key={l} type="button"
-            onClick={() => setForm((f) => ({ ...f, label: l }))}
-            className={`flex-1 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
-              form.label === l ? 'bg-brand-primary text-white shadow-md' : 'bg-cream-100 text-gray-700 hover:bg-cream-200'
-            }`}
-          >{l}</button>
-        ))}
-      </div>
 
       {/* 1. Full Name & 2. Phone */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Full Name *</label>
-          <input 
-            name="fullName" 
-            value={form.fullName} 
-            onChange={handleFieldChange} 
+          <input
+            name="fullName"
+            value={form.fullName}
+            onChange={handleFieldChange}
             onFocus={handleFieldFocus}
-            required 
-            className="input-field" 
-            placeholder="John Doe" 
+            required
+            className="input-field"
+            placeholder="John Doe"
           />
         </div>
         <div>
@@ -254,15 +244,15 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       {isGuest && (
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Email Address *</label>
-          <input 
+          <input
             type="email"
-            name="email" 
-            value={form.email} 
-            onChange={handleFieldChange} 
+            name="email"
+            value={form.email}
+            onChange={handleFieldChange}
             onFocus={handleFieldFocus}
-            required 
-            className="input-field" 
-            placeholder="yourname@example.com" 
+            required
+            className="input-field"
+            placeholder="yourname@gmail.com"
           />
         </div>
       )}
@@ -271,20 +261,19 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       <div>
         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Pincode *</label>
         <div className="relative">
-          <input 
+          <input
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            name="pincode" 
-            value={form.pincode} 
-            onChange={handlePincodeChange} 
-            required 
+            name="pincode"
+            value={form.pincode}
+            onChange={handlePincodeChange}
+            required
             maxLength="6"
-            className={`input-field pr-10 border transition-all duration-200 ${
-              pincodeStatus === 'success' ? 'border-[#2d6a4f] focus:ring-[#2d6a4f]/20' :
+            className={`input-field pr-10 border transition-all duration-200 ${pincodeStatus === 'success' ? 'border-[#2d6a4f] focus:ring-[#2d6a4f]/20' :
               pincodeStatus === 'error' ? 'border-[#c0392b] focus:ring-[#c0392b]/20' :
-              'border-[#f5e7d8] focus:border-[#b88a2f] focus:ring-[#b88a2f]/20'
-            }`}
+                'border-[#f5e7d8] focus:border-[#b88a2f] focus:ring-[#b88a2f]/20'
+              }`}
             placeholder="6-digit pincode"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
@@ -294,12 +283,11 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
           </div>
         </div>
         {pincodeStatusText && (
-          <p className={`text-xs mt-1 font-medium ${
-            pincodeStatus === 'loading' ? 'text-[#8a7060]' :
+          <p className={`text-xs mt-1 font-medium ${pincodeStatus === 'loading' ? 'text-[#8a7060]' :
             pincodeStatus === 'success' ? 'text-[#2d6a4f]' :
-            pincodeStatus === 'error' ? 'text-[#c0392b]' :
-            'text-[#8a7060]' // api_down
-          }`}>
+              pincodeStatus === 'error' ? 'text-[#c0392b]' :
+                'text-[#8a7060]' // api_down
+            }`}>
             {pincodeStatusText}
           </p>
         )}
@@ -308,17 +296,16 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       {/* 4. Address Line 1 */}
       <div>
         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Address Line 1 *</label>
-        <input 
+        <input
           type="text"
-          name="line1" 
-          value={form.line1} 
-          onChange={handleFieldChange} 
+          name="line1"
+          value={form.line1}
+          onChange={handleFieldChange}
           onFocus={handleFieldFocus}
-          required 
-          className={`input-field transition-all duration-200 ${
-            autoFilledFields.line1 ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
-          }`} 
-          placeholder="Flat, House no., Street, Area" 
+          required
+          className={`input-field transition-all duration-200 ${autoFilledFields.line1 ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
+            }`}
+          placeholder="Flat, House no., Street, Area"
         />
         {showAreaHelper && form.line1 && (
           <p className="text-xs text-[#8a7060] mt-1 italic">
@@ -328,8 +315,8 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
         {showAreaDropdown && postOffices.length > 1 && (
           <div className="mt-2 bg-cream-50/50 border border-cream-200 rounded-xl p-3">
             <label className="text-[10px] font-bold text-[#8a7060] uppercase block mb-1">Select your area</label>
-            <select 
-              onChange={(e) => handleAreaSelect(e.target.value)} 
+            <select
+              onChange={(e) => handleAreaSelect(e.target.value)}
               value={form.line1}
               className="w-full bg-white border border-[#f5e7d8] rounded-lg px-2.5 py-1.5 text-xs text-[#5b3f2f] focus:outline-none focus:border-[#b88a2f]"
             >
@@ -344,13 +331,13 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       {/* 5. Address Line 2 */}
       <div>
         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Address Line 2 (Optional)</label>
-        <input 
-          name="line2" 
-          value={form.line2} 
-          onChange={handleFieldChange} 
+        <input
+          name="line2"
+          value={form.line2}
+          onChange={handleFieldChange}
           onFocus={handleFieldFocus}
-          className="input-field" 
-          placeholder="Flat, Floor, Building" 
+          className="input-field"
+          placeholder="Flat, Floor, Building"
         />
       </div>
 
@@ -358,28 +345,26 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">City *</label>
-          <input 
-            name="city" 
-            value={form.city} 
-            onChange={handleFieldChange} 
+          <input
+            name="city"
+            value={form.city}
+            onChange={handleFieldChange}
             onFocus={handleFieldFocus}
-            required 
-            className={`input-field transition-all duration-200 ${
-              autoFilledFields.city ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
-            }`} 
+            required
+            className={`input-field transition-all duration-200 ${autoFilledFields.city ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
+              }`}
           />
         </div>
         <div>
           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">State *</label>
-          <input 
-            name="state" 
-            value={form.state} 
-            onChange={handleFieldChange} 
+          <input
+            name="state"
+            value={form.state}
+            onChange={handleFieldChange}
             onFocus={handleFieldFocus}
-            required 
-            className={`input-field transition-all duration-200 ${
-              autoFilledFields.state ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
-            }`} 
+            required
+            className={`input-field transition-all duration-200 ${autoFilledFields.state ? 'bg-[#f5efe8] border-[#b88a2f]' : ''
+              }`}
           />
         </div>
       </div>
@@ -400,7 +385,7 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
         )}
         <button type="submit" disabled={saving}
           className="flex-1 bg-brand-primary text-white py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-brand-primary/20 hover:bg-brand-deep transition-all">
-          {saving ? 'Saving...' : 'Save & Continue'}
+          {saving ? 'Saving...' : 'Save & Next'}
         </button>
       </div>
     </form>
@@ -410,30 +395,30 @@ function InlineAddressForm({ onSave, onCancel, showCancel = true }) {
 /* -- Steps -- */
 const STEPS = [
   { id: 1, label: 'Address' },
-  { id: 2, label: 'Review' },
-  { id: 3, label: 'Payment' },
+  { id: 2, label: 'Payment' },
 ];
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const items     = useCartStore((s) => s.items);
+  const items = useCartStore((s) => s.items);
   const fetchCart = useCartStore((s) => s.fetchCart);
   const clearCart = useCartStore((s) => s.clearCart);
 
-  const [step, setStep]               = useState(1);
-  const [addresses, setAddresses]     = useState([]);
+  const [step, setStep] = useState(1);
+  const [addresses, setAddresses] = useState([]);
   const [guestAddress, setGuestAddress] = useState(null);
   const [selectedAddr, setSelectedAddr] = useState(null);
   const [showInlineForm, setShowInlineForm] = useState(false);
-  const [notes, setNotes]             = useState('');
-  const [placing, setPlacing]         = useState(false);
-  const [showItems, setShowItems]     = useState(false);
+  const [notes, setNotes] = useState('');
+  const [placing, setPlacing] = useState(false);
+  const [showItems, setShowItems] = useState(false);
   const [currentOrderData, setCurrentOrderData] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(null); // 'verifying' | null
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [razorpayOrderId, setRazorpayOrderId] = useState(null);
   const [idempotencyKey, setIdempotencyKey] = useState('');
   const [selectedMethod, setSelectedMethod] = useState(null); // 'RAZORPAY' | 'COD' | null
+  const hasAutoNavigated = useRef(false);
 
   useEffect(() => {
     setIdempotencyKey(crypto.randomUUID());
@@ -441,11 +426,12 @@ export default function Checkout() {
 
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const isGuest = !user;
   const isProfileComplete = useAuthStore((s) => s.isProfileComplete?.() || false);
 
   const subtotal = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
   const shipping = 0; // Free shipping on all orders!
-  const total    = subtotal + shipping;
+  const total = subtotal + shipping;
 
   const loadAddresses = useCallback(async () => {
     if (!user) {
@@ -485,6 +471,10 @@ export default function Checkout() {
       if (def) {
         setSelectedAddr(def.id);
         setShowInlineForm(false);
+        if (user && !hasAutoNavigated.current) {
+          hasAutoNavigated.current = true;
+          setStep(2);
+        }
       } else {
         setShowInlineForm(true);
       }
@@ -493,9 +483,9 @@ export default function Checkout() {
     }
   }, [user]);
 
-  useEffect(() => { 
+  useEffect(() => {
     if (user) {
-      loadAddresses(); 
+      loadAddresses();
     } else {
       setAddresses([]);
       setSelectedAddr('guest');
@@ -504,7 +494,7 @@ export default function Checkout() {
   }, [user, loadAddresses]);
 
   useEffect(() => {
-    if (items.length === 0 && step !== 3) navigate('/cart');
+    if (items.length === 0 && step !== 2) navigate('/cart');
   }, [items, step, navigate]);
 
   useEffect(() => {
@@ -516,13 +506,23 @@ export default function Checkout() {
   const addAddress = async (form) => {
     if (user) {
       try {
-        const { data } = await usersApi.addAddress(form);
+        if (!isProfileComplete) {
+          await api.post('/users/complete-profile', {
+            phone: form.phone,
+            street: form.line1 + (form.line2 ? `, ${form.line2}` : ''),
+            city: form.city,
+            state: form.state,
+            pincode: form.pincode
+          });
+          await useAuthStore.getState().fetchMe();
+          toast.success('Profile and address saved!');
+        } else {
+          await usersApi.addAddress(form);
+        }
         await loadAddresses();
-        setSelectedAddr(data.data.id);
-        setShowInlineForm(false);
-        toast.success('Address added!');
+        setStep(2);
       } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to add address');
+        toast.error(err.response?.data?.message || 'Failed to save address details');
         throw err;
       }
     } else {
@@ -530,6 +530,7 @@ export default function Checkout() {
       setSelectedAddr('guest');
       setShowInlineForm(false);
       toast.success('Details saved!');
+      setStep(2);
     }
   };
 
@@ -563,8 +564,8 @@ export default function Checkout() {
         }
 
         const payload = {
-          amount: total, 
-          currency: 'INR', 
+          amount: total,
+          currency: 'INR',
           notes,
           idempotencyKey
         };
@@ -576,7 +577,7 @@ export default function Checkout() {
 
         const { data: responseBody } = await paymentsApi.createOrder(payload);
         const rzpData = responseBody.data;
-        
+
         setPaymentInitiated(true);
         setRazorpayOrderId(rzpData.razorpayOrderId);
 
@@ -620,7 +621,7 @@ export default function Checkout() {
             contact: user?.phone || guestAddress?.phone || '',
           },
           theme: { color: '#5b3f2f' },
-          modal: { 
+          modal: {
             ondismiss: () => {
               setPlacing(false);
               setPaymentLoading(null);
@@ -631,7 +632,7 @@ export default function Checkout() {
         };
 
         const rzp = new window.Razorpay(options);
-        
+
         rzp.on('payment.failed', (response) => {
           setPaymentLoading(null);
           toast.error(response.error?.description || 'Payment failed. Please try again.');
@@ -691,28 +692,27 @@ export default function Checkout() {
             </h1>
             <div className="flex items-center gap-4">
               <div className="h-0.5 w-12 bg-brand-secondary" />
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">Step {step} of 3</p>
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">Step {step} of {STEPS.length}</p>
             </div>
           </div>
         </div>
 
         {/* Step Progress Indicator */}
         <div className="mb-8 sm:mb-12 p-3 sm:p-6 card flex items-center justify-between">
-          {STEPS.map((s, i) => (
+          {STEPS.map((s, i, arr) => (
             <div key={s.id} className="flex items-center flex-1">
               <div className="flex items-center gap-2">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                  step === s.id
-                    ? 'bg-brand-primary text-white ring-4 ring-brand-primary/20'
-                    : step > s.id
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${step === s.id
+                  ? 'bg-brand-primary text-white ring-4 ring-brand-primary/20'
+                  : step > s.id
                     ? 'bg-brand-secondary text-white'
                     : 'bg-cream-200 text-gray-400'
-                }`}>
-                  {step > s.id ? <Check className="w-4 h-4" /> : s.id}
+                  }`}>
+                  {step > s.id ? <Check className="w-4 h-4" /> : (i + 1)}
                 </div>
                 <span className="font-bold text-[10px] sm:text-sm text-gray-700 hidden sm:inline uppercase tracking-widest">{s.label}</span>
               </div>
-              {i < STEPS.length - 1 && (
+              {i < arr.length - 1 && (
                 <div className={`flex-1 h-0.5 mx-4 ${step > s.id ? 'bg-brand-secondary' : 'bg-cream-200'}`} />
               )}
             </div>
@@ -734,7 +734,7 @@ export default function Checkout() {
                   </div>
                   <h2 className="text-xl font-bold text-gray-900">Delivery Address</h2>
                 </div>
-                {step > 1 && (
+                {step > 1 && !isGuest && (
                   <button onClick={() => setStep(1)} className="text-xs font-semibold text-brand-primary hover:text-brand-secondary transition-colors uppercase tracking-wider">
                     Change
                   </button>
@@ -744,10 +744,10 @@ export default function Checkout() {
               {step === 1 && (
                 <div className="space-y-6">
                   {showInlineForm ? (
-                    <InlineAddressForm 
-                      onSave={addAddress} 
-                      onCancel={() => setShowInlineForm(false)} 
-                      showCancel={addresses.length > 0} 
+                    <InlineAddressForm
+                      onSave={addAddress}
+                      onCancel={() => setShowInlineForm(false)}
+                      showCancel={addresses.length > 0}
                     />
                   ) : (
                     <div className="space-y-3">
@@ -755,11 +755,10 @@ export default function Checkout() {
                       {addresses.map((a) => (
                         <label
                           key={a.id}
-                          className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all group ${
-                            selectedAddr === a.id
-                              ? 'border-brand-secondary bg-linear-to-r from-brand-surface to-transparent shadow-md'
-                              : 'border-cream-300 hover:border-brand-secondary hover:bg-cream-50'
-                          }`}
+                          className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all group ${selectedAddr === a.id
+                            ? 'border-brand-secondary bg-linear-to-r from-brand-surface to-transparent shadow-md'
+                            : 'border-cream-300 hover:border-brand-secondary hover:bg-cream-50'
+                            }`}
                         >
                           <input
                             type="radio"
@@ -818,26 +817,30 @@ export default function Checkout() {
                   )}
 
                   {/* Divider */}
-                  <div className="flex items-center gap-4 py-2">
-                    <div className="flex-1 h-0.5 bg-linear-to-r from-cream-300 to-transparent" />
-                    <span className="text-xs text-gray-400 font-semibold uppercase">Additional Info</span>
-                    <div className="flex-1 h-0.5 bg-linear-to-l from-cream-300 to-transparent" />
-                  </div>
+                  {!isGuest && (
+                    <div className="flex items-center gap-4 py-2">
+                      <div className="flex-1 h-0.5 bg-linear-to-r from-cream-300 to-transparent" />
+                      <span className="text-xs text-gray-400 font-semibold uppercase">Additional Info</span>
+                      <div className="flex-1 h-0.5 bg-linear-to-l from-cream-300 to-transparent" />
+                    </div>
+                  )}
 
-                  {/* Order Notes */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-widest flex items-center gap-2">
-                      <span>Special Instructions</span>
-                      <span className="text-gray-400 font-normal">(Optional)</span>
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 sm:px-4 py-3 rounded-2xl border-2 border-cream-200 focus:border-brand-secondary focus:outline-none transition-colors resize-none placeholder-gray-400 text-sm"
-                      placeholder="Add any special instructions or delivery notes (e.g., ring doorbell twice, leave with security guard)"
-                    />
-                  </div>
+                  {/* Order Notes - Registered Only */}
+                  {!isGuest && (
+                    <div className="space-y-2 mb-4">
+                      <label className="text-xs font-bold text-gray-700 uppercase tracking-widest flex items-center gap-2">
+                        <span>Special Instructions</span>
+                        <span className="text-gray-400 font-normal">(Optional)</span>
+                      </label>
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 sm:px-4 py-3 rounded-2xl border-2 border-cream-200 focus:border-brand-secondary focus:outline-none transition-colors resize-none placeholder-gray-400 text-sm"
+                        placeholder="Add any special instructions or delivery notes (e.g., ring doorbell twice, leave with security guard)"
+                      />
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 sm:gap-3 pt-4">
@@ -854,7 +857,7 @@ export default function Checkout() {
                       }}
                       className="flex-1 px-3 sm:px-6 py-3 sm:py-4 rounded-2xl bg-brand-primary text-white font-bold text-sm sm:text-base hover:bg-brand-secondary transition-colors shadow-md"
                     >
-                      Review Order
+                      Proceed to Payment
                     </button>
                   </div>
                 </div>
@@ -870,75 +873,10 @@ export default function Checkout() {
               )}
             </div>
 
-            {/* STEP 2 — Review */}
+
+
+            {/* STEP 2 — Payment */}
             {step >= 2 && (
-              <div className="card p-4 sm:p-6 md:p-8">
-                <div className="flex items-center justify-between gap-4 pb-6 border-b border-cream-200 mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center">
-                      <Package className="w-5 h-5 text-brand-primary" />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900">Review Items</h2>
-                  </div>
-                  {step > 2 && (
-                    <button onClick={() => setStep(2)} className="text-xs font-semibold text-brand-primary hover:text-brand-secondary transition-colors uppercase tracking-wider">
-                      Change
-                    </button>
-                  )}
-                </div>
-
-                {step === 2 && (
-                  <div className="space-y-6">
-                    <div className="divide-y divide-cream-100">
-                      {items.map((item) => (
-                        <div key={item.id} className="flex items-start gap-4 py-5 first:pt-0 last:pb-0">
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-cream-100 border border-cream-200 shrink-0">
-                            {item.product?.images?.[0]?.url ? (
-                              <img
-                                src={item.product.images[0].url}
-                                alt={item.product.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Package className="w-6 h-6 text-cream-300" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-gray-900 text-sm sm:text-base leading-tight mb-1">{item.product?.name}</p>
-                            <div className="flex items-center gap-2 mb-2">
-                              {item.product?.unit && <span className="text-[10px] font-bold text-gray-400 uppercase bg-cream-100 px-1.5 py-0.5 rounded-md">{item.product.unit}</span>}
-                              <span className="text-xs font-medium text-gray-500">Qty: <span className="font-bold text-gray-900">{item.quantity}</span></span>
-                            </div>
-                            <p className="font-bold text-base text-brand-primary">
-                              ₹{(Number(item.price) * item.quantity).toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setStep(3)}
-                      className="group relative w-full bg-brand-primary text-white py-4 sm:py-5 rounded-2xl font-bold text-sm uppercase tracking-[0.2em] shadow-xl shadow-brand-primary/20 hover:bg-brand-secondary transition-all flex items-center justify-center gap-3 overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                      <span>Continue to Payment</span>
-                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </div>
-                )}
-
-                {step > 2 && (
-                  <div className="p-4 bg-brand-surface rounded-2xl text-sm text-gray-600">
-                    {items.length} item{items.length !== 1 ? 's' : ''} reviewed
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* STEP 3 — Payment */}
-            {step >= 3 && (
               <div className="card p-4 sm:p-6 md:p-8">
                 <div className="flex items-center gap-4 pb-6 border-b border-cream-200 mb-8">
                   <div className="w-10 h-10 rounded-2xl bg-brand-surface flex items-center justify-center">
@@ -954,8 +892,8 @@ export default function Checkout() {
                       type="button"
                       onClick={() => !placing && setSelectedMethod('RAZORPAY')}
                       className={`group relative flex flex-col items-center gap-3 p-6 rounded-3xl border-2 transition-all duration-300 text-center overflow-hidden
-                        ${selectedMethod === 'RAZORPAY' 
-                          ? 'border-[#5a3f2f] bg-[#5a3f2f]/5 ring-1 ring-[#5a3f2f]' 
+                        ${selectedMethod === 'RAZORPAY'
+                          ? 'border-[#5a3f2f] bg-[#5a3f2f]/5 ring-1 ring-[#5a3f2f]'
                           : 'border-cream-200 hover:border-[#b88a2f]/40 bg-white'}
                         ${placing ? 'pointer-events-none' : 'cursor-pointer'}
                         ${selectedMethod && selectedMethod !== 'RAZORPAY' ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}
@@ -966,7 +904,7 @@ export default function Checkout() {
                           <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       )}
-                      
+
                       {placing && selectedMethod === 'RAZORPAY' && (
                         <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex flex-col items-center justify-center z-20 animate-in fade-in duration-200">
                           <div className="w-8 h-8 border-3 border-[#5a3f2f] border-t-transparent rounded-full animate-spin mb-2" />
@@ -993,8 +931,8 @@ export default function Checkout() {
                       type="button"
                       onClick={() => !placing && setSelectedMethod('COD')}
                       className={`group relative flex flex-col items-center gap-3 p-6 rounded-3xl border-2 transition-all duration-300 text-center overflow-hidden
-                        ${selectedMethod === 'COD' 
-                          ? 'border-[#5a3f2f] bg-[#5a3f2f]/5 ring-1 ring-[#5a3f2f]' 
+                        ${selectedMethod === 'COD'
+                          ? 'border-[#5a3f2f] bg-[#5a3f2f]/5 ring-1 ring-[#5a3f2f]'
                           : 'border-cream-200 hover:border-green-200 bg-white'}
                         ${placing ? 'pointer-events-none' : 'cursor-pointer'}
                         ${selectedMethod && selectedMethod !== 'COD' ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}
@@ -1034,8 +972,8 @@ export default function Checkout() {
                       onClick={() => handleCreateOrder(selectedMethod)}
                       disabled={!selectedMethod || placing}
                       className={`group relative w-full py-4 sm:py-5 rounded-2xl font-bold text-xs sm:text-sm uppercase tracking-[0.15em] sm:tracking-[0.2em] shadow-xl transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 overflow-hidden
-                        ${!selectedMethod 
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' 
+                        ${!selectedMethod
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
                           : 'bg-[#5a3f2f] text-white hover:bg-[#3b2a1f] shadow-[#5a3f2f]/20'}
                         ${placing ? 'opacity-90 cursor-not-allowed' : ''}
                       `}
@@ -1063,7 +1001,7 @@ export default function Checkout() {
                         </>
                       )}
                     </button>
-                    
+
                     <p className="text-[10px] text-gray-400 text-center mt-4 uppercase tracking-[0.15em] font-medium">
                       By placing this order, you agree to our <Link to="/terms" className="underline hover:text-gray-600">Terms & Conditions</Link>
                     </p>

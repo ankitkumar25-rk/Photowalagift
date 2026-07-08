@@ -45,6 +45,11 @@ export const useAuthStore = create(
             throw new Error('Invalid response format: missing user data');
           }
           
+          const accessToken = data?.data?.accessToken || data?.accessToken;
+          const refreshToken = data?.data?.refreshToken || data?.refreshToken;
+          if (accessToken) localStorage.setItem('token', accessToken);
+          if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
           set({ user: userData, isLoading: false, isInitialized: true, isHydrating: false });
           await cartApi.merge().catch(() => {});
           await useCartStore.getState().fetchCart();
@@ -82,6 +87,8 @@ export const useAuthStore = create(
           await authApi.logout().catch(() => {});
         } finally {
           localStorage.removeItem('auth-storage');
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
           set({ user: null, _fetchMePromise: null, isInitialized: true, isHydrating: false });
           useCartStore.getState().resetCart();
         }

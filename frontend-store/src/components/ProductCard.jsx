@@ -25,7 +25,7 @@ const ProductCard = memo(function ProductCard({ product }) {
       }
       try {
         await toggleWishlist({ productId: product.id, isWishlisted: productWishlisted });
-        toast.success(productWishlisted ? 'Removed from wishlist' : 'Added to wishlist ❤️');
+        toast.success(productWishlisted ? 'Removed from wishlist' : 'Added to wishlist ');
       } catch {
         toast.error('Failed to update wishlist');
       }
@@ -75,19 +75,20 @@ const ProductCard = memo(function ProductCard({ product }) {
         )}
 
         {/* Badges and Actions */}
-        <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
-          <button
-            onClick={handleWishlistClick}
-            disabled={isPending}
-            className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
-              productWishlisted
-                ? 'bg-red-50 text-red-500 shadow-sm'
-                : 'bg-white/70 text-gray-500 hover:bg-white hover:text-red-500'
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${productWishlisted ? 'fill-current' : ''}`} />
-          </button>
-        </div>
+        {user && (
+          <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
+            <button
+              onClick={handleWishlistClick}
+              disabled={isPending}
+              className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${productWishlisted
+                  ? 'bg-red-50 text-red-500 shadow-sm'
+                  : 'bg-white/70 text-gray-500 hover:bg-white hover:text-red-500'
+                }`}
+            >
+              <Heart className={`w-4 h-4 ${productWishlisted ? 'fill-current' : ''}`} />
+            </button>
+          </div>
+        )}
 
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           {product.isFeatured && (
@@ -142,8 +143,8 @@ const ProductCard = memo(function ProductCard({ product }) {
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#b88a2f] text-white text-sm font-semibold
-                       transition-all duration-200 hover:bg-[#5b3f2f] hover:shadow-[0_10px_24px_-10px_rgba(91,63,47,0.8)]
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#5a3f2f] text-white text-sm font-semibold
+                       transition-all duration-200 hover:bg-[#b88a2f] hover:shadow-[0_10px_24px_-10px_rgba(91,63,47,0.8)]
                        disabled:opacity-40 disabled:cursor-not-allowed"
             id={`add-to-cart-${product.id}`}
           >

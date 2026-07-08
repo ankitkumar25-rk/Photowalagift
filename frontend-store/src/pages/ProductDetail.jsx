@@ -667,18 +667,20 @@ export default function ProductDetail() {
                     </button>
 
                     {/* Wishlist Button */}
-                    <button
-                      onClick={toggleWishlist}
-                      disabled={isWishlistPending}
-                      className={`w-14 rounded-2xl border-2 flex items-center justify-center transition-all cursor-pointer ${
-                        inWishlist
-                          ? 'border-red-400 bg-red-50 text-red-500 hover:bg-red-100'
-                          : 'border-cream-300 hover:border-red-300 text-gray-400 hover:text-red-400 hover:bg-red-50'
-                      }`}
-                      aria-label="Wishlist"
-                    >
-                      <Heart className={`w-5 h-5 ${inWishlist ? 'fill-red-400 text-red-400' : ''}`} />
-                    </button>
+                    {user && (
+                      <button
+                        onClick={toggleWishlist}
+                        disabled={isWishlistPending}
+                        className={`w-14 rounded-2xl border-2 flex items-center justify-center transition-all cursor-pointer ${
+                          inWishlist
+                            ? 'border-red-400 bg-red-50 text-red-500 hover:bg-red-100'
+                            : 'border-cream-300 hover:border-red-300 text-gray-400 hover:text-red-400 hover:bg-red-50'
+                        }`}
+                        aria-label="Wishlist"
+                      >
+                        <Heart className={`w-5 h-5 ${inWishlist ? 'fill-red-400 text-red-400' : ''}`} />
+                      </button>
+                    )}
 
                     {/* Share Button */}
                     <button
