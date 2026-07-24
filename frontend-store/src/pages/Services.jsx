@@ -12,7 +12,6 @@ const SERVICES = [
     badge: 'PREMIUM',
     badgeColor: 'bg-green-700',
     link: '/services/machine-services/co2-laser',
-    priceNotSet: true
   },
   {
     id: 'laser-marking',
@@ -21,7 +20,6 @@ const SERVICES = [
     image: serviceAssets.laserMarking,
     icon: Settings,
     link: '/services/machine-services/laser-marking',
-    priceNotSet: true
   },
   {
     id: 'cnc-router',
@@ -30,7 +28,6 @@ const SERVICES = [
     image: serviceAssets.cncRouter,
     icon: PenTool,
     link: '/services/machine-services/cnc-router',
-    priceNotSet: true
   },
 
 
@@ -107,14 +104,7 @@ export default function Services() {
                     <p className="text-gray-600 text-xs mb-8 grow leading-relaxed">
                       {service.description}
                     </p>
-                    {service.priceNotSet && (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f5e7d8] border border-[#b88a2f]/30 rounded-full mt-2 mb-3">
-                        <span className="text-[10px]">⏳</span>
-                        <span className="text-xs font-semibold text-[#b88a2f] uppercase tracking-wider">
-                          Price Not Set Yet
-                        </span>
-                      </div>
-                    )}
+
                     <Link 
                       to={service.link}
                       className="w-full block text-center bg-brand-primary hover:bg-brand-deep text-white font-bold py-3 rounded-pill transition-all text-xs uppercase tracking-widest hover:shadow-lg hover:shadow-brand-primary/20"

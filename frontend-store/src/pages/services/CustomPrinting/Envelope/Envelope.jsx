@@ -1,11 +1,14 @@
 import { useState, useMemo, createElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   PenTool, StickyNote, Printer, FileText, Tag, Book, Mail,
   HelpCircle, UploadCloud, AlertTriangle, ShoppingCart, Package, File, Loader2, Truck, CheckCircle2,
   ChevronLeft, ChevronRight, Layers, Layout
 } from 'lucide-react';
 import api from '../../../../api/client';
+import { useAuthStore } from '../../../../store';
+import CustomDropdown from '../../../../components/CustomDropdown';
 import { 
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature, 
   FaTag, FaFileInvoiceDollar, FaEnvelope
@@ -99,6 +102,7 @@ const QTY_OPTIONS = [1000, 2000, 3000, 4000];
 
 export default function Envelope() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const [orderName, setOrderName] = useState('');
   const [product, setProduct] = useState('ENV_9X4');
   const [paperType, setPaperType] = useState('');
@@ -156,6 +160,12 @@ export default function Envelope() {
       alert('Please fill all mandatory fields (Paper, Flap, Qty, and Design).');
       return;
     }
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
     try {
       setLoading(true);
       let fileUrl = '';
@@ -247,10 +257,12 @@ export default function Envelope() {
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Select Product</label>
-                <select value={product} onChange={(e) => handleProductChange(e.target.value)}
-                  className="w-full bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-[#b65e2e]/20 outline-none transition-all appearance-none">
-                  {Envelope_PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                <CustomDropdown
+                  options={Envelope_PRODUCTS.map(p => ({ value: p.id, label: p.name }))}
+                  value={product}
+                  onChange={(e) => handleProductChange(e.target.value)}
+                  placeholder="Select Product"
+                />
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -263,11 +275,14 @@ export default function Envelope() {
                       <FileText className="w-4 h-4 text-[#a64d24]" />
                       <span className="text-sm font-bold text-gray-700">Paper Type</span>
                     </div>
-                    <select value={paperType} onChange={(e) => setPaperType(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {activeProduct.papers.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={activeProduct.papers}
+                        value={paperType}
+                        onChange={(e) => setPaperType(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                   {!activeProduct.hideWindow && (
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -275,11 +290,14 @@ export default function Envelope() {
                         <Layout className="w-4 h-4 text-[#a64d24]" />
                         <span className="text-sm font-bold text-gray-700">Window Cutting</span>
                       </div>
-                      <select value={windowCut} onChange={(e) => setWindowCut(e.target.value)}
-                        className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                        <option value="">--Select--</option>
-                        {WINDOW_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
+                      <div className="w-full sm:flex-1">
+                        <CustomDropdown
+                          options={WINDOW_OPTIONS}
+                          value={windowCut}
+                          onChange={(e) => setWindowCut(e.target.value)}
+                          placeholder="--Select--"
+                        />
+                      </div>
                     </div>
                   )}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -287,22 +305,28 @@ export default function Envelope() {
                       <Layout className="w-4 h-4 text-[#a64d24]" />
                       <span className="text-sm font-bold text-gray-700">Flap Opening</span>
                     </div>
-                    <select value={flap} onChange={(e) => setFlap(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {FLAP_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={FLAP_OPTIONS}
+                        value={flap}
+                        onChange={(e) => setFlap(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div className="w-full sm:w-32 flex items-center gap-2">
                       <Layers className="w-4 h-4 text-[#a64d24]" />
                       <span className="text-sm font-bold text-gray-700">Qty.</span>
                     </div>
-                    <select value={qty} onChange={(e) => setQty(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none font-bold">
-                      <option value="">--Select--</option>
-                      {QTY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={QTY_OPTIONS}
+                        value={qty}
+                        onChange={(e) => setQty(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

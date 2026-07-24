@@ -1,11 +1,14 @@
 import { useState, useMemo, createElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   PenTool, StickyNote, Printer, FileText, Tag, Book, Mail,
   HelpCircle, UploadCloud, AlertTriangle, ShoppingCart, Package, File, Loader2, Truck, CheckCircle2,
   ChevronLeft, ChevronRight, BookOpen, Layers
 } from 'lucide-react';
 import api from '../../../../api/client';
+import { useAuthStore } from '../../../../store';
+import CustomDropdown from '../../../../components/CustomDropdown';
 import { 
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature, 
   FaTag, FaFileInvoiceDollar, FaEnvelope
@@ -13,12 +16,12 @@ import {
 
 const SIDEBAR_LINKS = [
   { id: 'pen', icon: FaPenNib, label: 'Pen', to: '/services/custom-printing/pen' },
-  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels', comingSoon: true },
-  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing', comingSoon: true },
-  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead', comingSoon: true },
-  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag', comingSoon: true },
+  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels' },
+  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing' },
+  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead' },
+  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag' },
   { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book', active: true },
-  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope', comingSoon: true },
+  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope' },
 ];
 
 
@@ -41,6 +44,7 @@ const BINDING_OPTIONS = ['Normal', 'Premium'];
 
 export default function BillBook() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const [orderName, setOrderName] = useState('');
   const [product, setProduct]     = useState('A4_BB_2');
   const [qty, setQty]             = useState(10);
@@ -102,6 +106,12 @@ export default function BillBook() {
         alert('Please fill all mandatory fields.');
         return;
     }
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
     try {
       setLoading(true);
       let fileUrl = '';
@@ -170,25 +180,14 @@ export default function BillBook() {
         </div>
         <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 no-scrollbar">
           {SIDEBAR_LINKS.map((link) => (
-            <div key={link.id} className="relative">
-              <Link
-                to={link.comingSoon ? '#' : link.to}
-                onClick={(e) => link.comingSoon && e.preventDefault()}
-                className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
-                  ? 'bg-[#b65e2e] text-white shadow-lg'
-                  : link.comingSoon
-                    ? 'text-gray-400 cursor-not-allowed opacity-60'
-                    : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
-                  }`}>
-                {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
-                <span className="uppercase tracking-wider">{link.label}</span>
-                {link.comingSoon && (
-                  <span className="ml-auto bg-[#d96a22] text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm">
-                    Soon
-                  </span>
-                )}
-              </Link>
-            </div>
+            <Link key={link.id} to={link.to}
+              className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
+                ? 'bg-[#b65e2e] text-white shadow-lg'
+                : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
+                }`}>
+              {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
+              <span className="uppercase tracking-wider">{link.label}</span>
+            </Link>
           ))}
         </nav>
 
@@ -208,10 +207,12 @@ export default function BillBook() {
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Select Product</label>
-                <select value={product} onChange={(e)=>handleProductChange(e.target.value)}
-                  className="w-full bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-[#b65e2e]/20 outline-none transition-all appearance-none">
-                    {BILL_BOOK_PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                <CustomDropdown
+                  options={BILL_BOOK_PRODUCTS.map(p => ({ value: p.id, label: p.name }))}
+                  value={product}
+                  onChange={(e) => handleProductChange(e.target.value)}
+                  placeholder="Select Product"
+                />
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -235,22 +236,28 @@ export default function BillBook() {
                         <File className="w-4 h-4 text-[#a64d24]" />
                         <span className="text-sm font-bold text-gray-700">1st Paper Quality</span>
                     </div>
-                    <select value={paperQuality} onChange={(e)=>setPaperQuality(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {PAPER_QUALITY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={PAPER_QUALITY_OPTIONS}
+                        value={paperQuality}
+                        onChange={(e) => setPaperQuality(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div className="w-full sm:w-32 flex items-center gap-2">
                         <File className="w-4 h-4 text-[#a64d24]" />
                         <span className="text-sm font-bold text-gray-700">2nd Copy Color</span>
                     </div>
-                    <select value={paperColor} onChange={(e)=>setPaperColor(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {COLOR_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={COLOR_OPTIONS}
+                        value={paperColor}
+                        onChange={(e) => setPaperColor(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                   {product === 'A4_BB_3' && (
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 animate-in slide-in-from-left duration-300">
@@ -258,11 +265,14 @@ export default function BillBook() {
                           <File className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">3rd Copy Color</span>
                       </div>
-                      <select value={paperColor3} onChange={(e)=>setPaperColor3(e.target.value)}
-                        className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                        <option value="">--Select--</option>
-                        {COLOR_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
+                      <div className="w-full sm:flex-1">
+                        <CustomDropdown
+                          options={COLOR_OPTIONS}
+                          value={paperColor3}
+                          onChange={(e) => setPaperColor3(e.target.value)}
+                          placeholder="--Select--"
+                        />
+                      </div>
                     </div>
                   )}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -270,11 +280,14 @@ export default function BillBook() {
                         <BookOpen className="w-4 h-4 text-[#a64d24]" />
                         <span className="text-sm font-bold text-gray-700">Binding Quality</span>
                     </div>
-                    <select value={binding} onChange={(e)=>setBinding(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {BINDING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={BINDING_OPTIONS}
+                        value={binding}
+                        onChange={(e) => setBinding(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

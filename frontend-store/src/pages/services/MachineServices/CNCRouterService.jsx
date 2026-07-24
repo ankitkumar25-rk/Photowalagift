@@ -9,6 +9,7 @@ import api from '../../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store';
 import { toast } from 'react-hot-toast';
+import CustomDropdown from '../../../components/CustomDropdown';
 
 const MATERIAL_TYPES = ['Solid Wood', 'Plywood / MDF', 'Acrylic Sheets', 'Aluminum Composite (ACP)', 'PVC / Foam Board', 'Solid Surface (Corian)'];
 const PROCESS_TYPES = ['2D Profile Cutting', '3D Carving / Bas-Relief', 'Drilling & Pocketing', 'V-Groove Folding'];
@@ -52,6 +53,7 @@ export default function CNCRouterService() {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
     try {
       setLoading(true);
       let fileUrl = '';
@@ -157,26 +159,22 @@ export default function CNCRouterService() {
                   {/* Material Type */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Material</label>
-                    <select
+                    <CustomDropdown
+                      options={MATERIAL_TYPES}
                       value={materialType}
                       onChange={(e) => setMaterialType(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#f08c00]/20 focus:border-[#f08c00] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">-- Select Material --</option>
-                      {MATERIAL_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
+                      placeholder="-- Select Material --"
+                    />
                   </div>
                   {/* Process Type */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">CNC Process</label>
-                    <select
+                    <CustomDropdown
+                      options={PROCESS_TYPES}
                       value={processType}
                       onChange={(e) => setProcessType(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#f08c00]/20 focus:border-[#f08c00] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">-- Select Process --</option>
-                      {PROCESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                      placeholder="-- Select Process --"
+                    />
                   </div>
                 </div>
 
@@ -184,14 +182,12 @@ export default function CNCRouterService() {
                   {/* Quantity */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Quantity</label>
-                    <select
+                    <CustomDropdown
+                      options={QUANTITY_TIERS}
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#f08c00]/20 focus:border-[#f08c00] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">-- Select Quantity --</option>
-                      {QUANTITY_TIERS.map(q => <option key={q} value={q}>{q}</option>)}
-                    </select>
+                      placeholder="-- Select Quantity --"
+                    />
                   </div>
                   {/* Dimensions */}
                   <div>

@@ -1,5 +1,6 @@
 import { useState, createElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   PenTool, StickyNote, Printer, FileText, Tag, Book, Mail,
   HelpCircle, UploadCloud, AlertTriangle, ShoppingCart, Layers, Package, Truck, Scissors, Paperclip, Loader2
@@ -7,6 +8,7 @@ import {
 import api from '../../../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../../store';
+import CustomDropdown from '../../../../components/CustomDropdown';
 import { 
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature, 
   FaTag, FaFileInvoiceDollar, FaEnvelope
@@ -14,12 +16,12 @@ import {
 
 const SIDEBAR_LINKS = [
   { id: 'pen', icon: FaPenNib, label: 'Pen', to: '/services/custom-printing/pen' },
-  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels', comingSoon: true },
+  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels' },
   { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing', active: true },
-  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead', comingSoon: true },
-  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag', comingSoon: true },
-  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book', comingSoon: true },
-  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope', comingSoon: true },
+  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead' },
+  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag' },
+  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book' },
+  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope' },
 ];
 
 
@@ -155,6 +157,12 @@ export default function DigitalPrinting() {
 
   const handleAddOrder = async () => {
     if (!sel || !qty || qty < minQty || (dOpt === 'online' && !file)) return;
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
 
     try {
       setLoading(true);
@@ -231,25 +239,14 @@ export default function DigitalPrinting() {
         </div>
         <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 no-scrollbar">
           {SIDEBAR_LINKS.map((link) => (
-            <div key={link.id} className="relative">
-              <Link
-                to={link.comingSoon ? '#' : link.to}
-                onClick={(e) => link.comingSoon && e.preventDefault()}
-                className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
-                  ? 'bg-[#b65e2e] text-white shadow-lg'
-                  : link.comingSoon
-                    ? 'text-gray-400 cursor-not-allowed opacity-60'
-                    : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
-                  }`}>
-                {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
-                <span className="uppercase tracking-wider">{link.label}</span>
-                {link.comingSoon && (
-                  <span className="ml-auto bg-[#d96a22] text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm">
-                    Soon
-                  </span>
-                )}
-              </Link>
-            </div>
+            <Link key={link.id} to={link.to}
+              className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
+                ? 'bg-[#b65e2e] text-white shadow-lg'
+                : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
+                }`}>
+              {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
+              <span className="uppercase tracking-wider">{link.label}</span>
+            </Link>
           ))}
         </nav>
 
@@ -361,14 +358,15 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">SELECT PRODUCT</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={artType} onChange={(e) => {
-                          setArtType(e.target.value);
-                          setLamination('');
-                        }}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:ring-1 focus:ring-blue-500/50">
-                          <option value="">--Select Product--</option>
-                          {ART_PAPER_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
+                        <CustomDropdown
+                          options={ART_PAPER_OPTIONS}
+                          value={artType}
+                          onChange={(e) => {
+                            setArtType(e.target.value);
+                            setLamination('');
+                          }}
+                          placeholder="--Select Product--"
+                        />
                       </div>
                     </div>
                   )}
@@ -380,11 +378,12 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">SELECT PRODUCT</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={textureType} onChange={(e) => setTextureType(e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:ring-1 focus:ring-blue-500/50">
-                          <option value="">--Select Product--</option>
-                          {TEXTURE_PAPER_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
+                        <CustomDropdown
+                          options={TEXTURE_PAPER_OPTIONS}
+                          value={textureType}
+                          onChange={(e) => setTextureType(e.target.value)}
+                          placeholder="--Select Product--"
+                        />
                       </div>
                     </div>
                   )}
@@ -396,11 +395,12 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">SELECT PRODUCT</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={metallicType} onChange={(e) => setMetallicType(e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:ring-1 focus:ring-blue-500/50">
-                          <option value="">--Select Product--</option>
-                          {METALLIC_PAPER_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
+                        <CustomDropdown
+                          options={METALLIC_PAPER_OPTIONS}
+                          value={metallicType}
+                          onChange={(e) => setMetallicType(e.target.value)}
+                          placeholder="--Select Product--"
+                        />
                       </div>
                     </div>
                   )}
@@ -412,14 +412,15 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">SELECT PRODUCT</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={ntpvcType} onChange={(e) => {
-                          setNtpvcType(e.target.value);
-                          if (e.target.value.includes('200 Micron')) setPrinting('1 Side');
-                        }}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:ring-1 focus:ring-blue-500/50">
-                          <option value="">--Select Product--</option>
-                          {NTPVC_PAPER_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
+                        <CustomDropdown
+                          options={NTPVC_PAPER_OPTIONS}
+                          value={ntpvcType}
+                          onChange={(e) => {
+                            setNtpvcType(e.target.value);
+                            if (e.target.value.includes('200 Micron')) setPrinting('1 Side');
+                          }}
+                          placeholder="--Select Product--"
+                        />
                       </div>
                     </div>
                   )}
@@ -431,11 +432,12 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">SELECT PRODUCT</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={gumType} onChange={(e) => setGumType(e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none focus:ring-1 focus:ring-blue-500/50">
-                          <option value="">--Select Product--</option>
-                          {((sel === 'gummed' ? GUMMING_PAPER_OPTIONS : PVC_GUMMING_OPTIONS)).map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
+                        <CustomDropdown
+                          options={sel === 'gummed' ? GUMMING_PAPER_OPTIONS : PVC_GUMMING_OPTIONS}
+                          value={gumType}
+                          onChange={(e) => setGumType(e.target.value)}
+                          placeholder="--Select Product--"
+                        />
                       </div>
                     </div>
                   )}
@@ -459,13 +461,12 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">Size</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={size} onChange={(e) => setSize(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none">
-                          <option value="">--Select--</option>
-                          {sel === 'pvcgum'
-                            ? <option value="13x19">13x19</option>
-                            : SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)
-                          }
-                        </select>
+                        <CustomDropdown
+                          options={sel === 'pvcgum' ? ['13x19'] : SIZE_OPTIONS}
+                          value={size}
+                          onChange={(e) => setSize(e.target.value)}
+                          placeholder="--Select--"
+                        />
                       </div>
                     </div>
                   )}
@@ -477,10 +478,12 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">Half Cut</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={halfCut} onChange={(e) => setHalfCut(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none">
-                          <option value="">--Select--</option>
-                          {HALFCUT_OPTIONS.map((h) => <option key={h} value={h}>{h}</option>)}
-                        </select>
+                        <CustomDropdown
+                          options={HALFCUT_OPTIONS}
+                          value={halfCut}
+                          onChange={(e) => setHalfCut(e.target.value)}
+                          placeholder="--Select--"
+                        />
                       </div>
                     </div>
                   )}
@@ -492,10 +495,12 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">Lamination</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={lamination} onChange={(e) => setLamination(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none">
-                          <option value="">--Select--</option>
-                          {LAMINATION_OPTIONS.map((l) => <option key={l} value={l}>{l}</option>)}
-                        </select>
+                        <CustomDropdown
+                          options={LAMINATION_OPTIONS}
+                          value={lamination}
+                          onChange={(e) => setLamination(e.target.value)}
+                          placeholder="--Select--"
+                        />
                       </div>
                     </div>
                   )}
@@ -508,20 +513,18 @@ export default function DigitalPrinting() {
                         <span className="text-sm font-bold text-[#001a57]">Printing</span>
                       </div>
                       <div className="w-full sm:w-2/3">
-                        <select value={printing} onChange={(e) => setPrinting(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 outline-none">
-                          <option value="">--Select--</option>
-                          {sel === 'only' ? (
-                            <>
-                              <option value="Single Side">Single Side</option>
-                              <option value="Both Side">Both Side</option>
-                            </>
-                          ) : (
-                            <>
-                              <option value="1 Side">1 Side</option>
-                              {sel !== 'texture' && !(sel === 'ntpvc' && ntpvcType.includes('200 Micron')) && <option value="2 Side">2 Side</option>}
-                            </>
-                          )}
-                        </select>
+                        <CustomDropdown
+                          options={
+                            sel === 'only'
+                              ? ['Single Side', 'Both Side']
+                              : sel !== 'texture' && !(sel === 'ntpvc' && ntpvcType.includes('200 Micron'))
+                              ? ['1 Side', '2 Side']
+                              : ['1 Side']
+                          }
+                          value={printing}
+                          onChange={(e) => setPrinting(e.target.value)}
+                          placeholder="--Select--"
+                        />
                       </div>
                     </div>
                   )}

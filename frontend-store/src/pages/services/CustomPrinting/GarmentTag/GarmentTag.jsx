@@ -1,11 +1,14 @@
 import { useState, useMemo, useEffect, createElement } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   PenTool, StickyNote, Printer, FileText, Tag, Book, Mail,
   HelpCircle, UploadCloud, AlertTriangle, ShoppingCart, Package, File, Loader2, Truck, CheckCircle2, Scissors,
   ChevronLeft, ChevronRight, Sparkles, Layers
 } from 'lucide-react';
 import api from '../../../../api/client';
+import { useAuthStore } from '../../../../store';
+import CustomDropdown from '../../../../components/CustomDropdown';
 import {
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature,
   FaTag, FaFileInvoiceDollar, FaEnvelope,
@@ -127,6 +130,7 @@ const DATA = {
 export default function GarmentTag() {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useAuthStore((s) => s.user);
   const [activeTab, setActiveTab] = useState('gloss');
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -247,6 +251,13 @@ export default function GarmentTag() {
       alert('Please fill all mandatory fields and attach file.');
       return;
     }
+
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
 
     try {
       setLoading(true);
@@ -406,28 +417,24 @@ export default function GarmentTag() {
               {activeTab === 'uv' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-in fade-in slide-in-from-top-4 duration-300">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Select UV Variant</label>
-                  <select
+                  <CustomDropdown
+                    options={activeData.productVariants}
                     value={productType}
                     onChange={(e) => setProductType(e.target.value)}
-                    className="w-full bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-[#b65e2e]/20 outline-none transition-all appearance-none"
-                  >
-                    <option value="">--Select Variant--</option>
-                    {activeData.productVariants.map(v => <option key={v} value={v}>{v}</option>)}
-                  </select>
+                    placeholder="--Select Variant--"
+                  />
                 </div>
               )}
 
               {activeTab === 'threads' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-in fade-in slide-in-from-top-4 duration-300">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Select Thread Type</label>
-                  <select
+                  <CustomDropdown
+                    options={activeData.products.map(v => ({ value: v.id, label: v.name }))}
                     value={selThread}
                     onChange={(e) => setSelThread(e.target.value)}
-                    className="w-full bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-[#b65e2e]/20 outline-none transition-all appearance-none"
-                  >
-                    <option value="">--Select Thread Type--</option>
-                    {activeData.products.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                  </select>
+                    placeholder="--Select Thread Type--"
+                  />
                 </div>
               )}
 
@@ -444,22 +451,28 @@ export default function GarmentTag() {
                           <Tag className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">Size</span>
                         </div>
-                        <select value={size} onChange={(e) => setSize(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select--</option>
-                          {SIZE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={SIZE_OPTIONS}
+                            value={size}
+                            onChange={(e) => setSize(e.target.value)}
+                            placeholder="--Select--"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <div className="w-full sm:w-32 flex items-center gap-2">
                           <Printer className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">Printing</span>
                         </div>
-                        <select value={printing} onChange={(e) => setPrinting(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select--</option>
-                          {(activeTab === 'uv' ? ['Single Side', 'Both Side'] : activeData.printingOptions).map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={activeTab === 'uv' ? ['Single Side', 'Both Side'] : activeData.printingOptions}
+                            value={printing}
+                            onChange={(e) => setPrinting(e.target.value)}
+                            placeholder="--Select--"
+                          />
+                        </div>
                       </div>
                       {activeTab === 'uv' && (
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 animate-in slide-in-from-left duration-300">
@@ -467,11 +480,14 @@ export default function GarmentTag() {
                             <Sparkles className="w-4 h-4 text-[#a64d24]" />
                             <span className="text-sm font-bold text-gray-700">Spot UV</span>
                           </div>
-                          <select value={spotUV} onChange={(e) => setSpotUV(e.target.value)}
-                            className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                            <option value="">--Select--</option>
-                            {['Single Side', 'Both Side'].map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
+                          <div className="w-full sm:flex-1">
+                            <CustomDropdown
+                              options={['Single Side', 'Both Side']}
+                              value={spotUV}
+                              onChange={(e) => setSpotUV(e.target.value)}
+                              placeholder="--Select--"
+                            />
+                          </div>
                         </div>
                       )}
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -479,22 +495,28 @@ export default function GarmentTag() {
                           <Tag className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">Qty.</span>
                         </div>
-                        <select value={qty} onChange={(e) => setQty(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select--</option>
-                          {QUANTITY_OPTIONS.map(o => <option key={o} value={o}>{o} Pcs</option>)}
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={QUANTITY_OPTIONS.map(o => ({ value: o, label: `${o} Pcs` }))}
+                            value={qty}
+                            onChange={(e) => setQty(e.target.value)}
+                            placeholder="--Select--"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <div className="w-full sm:w-32 flex items-center gap-2">
                           <Scissors className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">Die Shape</span>
                         </div>
-                        <select value={dieShape} onChange={(e) => setDieShape(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select--</option>
-                          {DIE_SHAPES.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={DIE_SHAPES}
+                            value={dieShape}
+                            onChange={(e) => setDieShape(e.target.value)}
+                            placeholder="--Select--"
+                          />
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -504,22 +526,28 @@ export default function GarmentTag() {
                           <Sparkles className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">Color</span>
                         </div>
-                        <select value={threadColor} onChange={(e) => setThreadColor(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select Color--</option>
-                          {activeData.colors.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={activeData.colors}
+                            value={threadColor}
+                            onChange={(e) => setThreadColor(e.target.value)}
+                            placeholder="--Select Color--"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <div className="w-full sm:w-32 flex items-center gap-2">
                           <Tag className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">Qty.</span>
                         </div>
-                        <select value={qty} onChange={(e) => setQty(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select Qty--</option>
-                          {QUANTITY_OPTIONS.map(o => <option key={o} value={o}>{o} Pcs</option>)}
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={QUANTITY_OPTIONS.map(o => ({ value: o, label: `${o} Pcs` }))}
+                            value={qty}
+                            onChange={(e) => setQty(e.target.value)}
+                            placeholder="--Select Qty--"
+                          />
+                        </div>
                       </div>
                     </>
                   )}

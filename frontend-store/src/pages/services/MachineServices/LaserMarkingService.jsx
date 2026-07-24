@@ -9,6 +9,7 @@ import api from '../../../api/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store';
 import { toast } from 'react-hot-toast';
+import CustomDropdown from '../../../components/CustomDropdown';
 
 const MATERIAL_TYPES = ['Stainless Steel', 'Aluminum', 'Brass/Copper', 'Titanium', 'Anodized Metal', 'Industrial Plastics'];
 const MARKING_TYPES = ['Surface Etching', 'Deep Engraving', 'Color Annealing (SS)', 'Carbonizing'];
@@ -52,6 +53,7 @@ export default function LaserMarkingService() {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
     try {
       setLoading(true);
       let fileUrl = '';
@@ -157,26 +159,22 @@ export default function LaserMarkingService() {
                   {/* Material Type */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Material</label>
-                    <select
+                    <CustomDropdown
+                      options={MATERIAL_TYPES}
                       value={materialType}
                       onChange={(e) => setMaterialType(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#3b71ca]/20 focus:border-[#3b71ca] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">-- Select Material --</option>
-                      {MATERIAL_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
+                      placeholder="-- Select Material --"
+                    />
                   </div>
                   {/* Marking Type */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Marking Type</label>
-                    <select
+                    <CustomDropdown
+                      options={MARKING_TYPES}
                       value={markingType}
                       onChange={(e) => setMarkingType(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#3b71ca]/20 focus:border-[#3b71ca] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">-- Select Process --</option>
-                      {MARKING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                      placeholder="-- Select Process --"
+                    />
                   </div>
                 </div>
 
@@ -184,14 +182,12 @@ export default function LaserMarkingService() {
                   {/* Quantity */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Quantity</label>
-                    <select
+                    <CustomDropdown
+                      options={QUANTITY_TIERS}
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#3b71ca]/20 focus:border-[#3b71ca] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">-- Select Quantity --</option>
-                      {QUANTITY_TIERS.map(q => <option key={q} value={q}>{q}</option>)}
-                    </select>
+                      placeholder="-- Select Quantity --"
+                    />
                   </div>
                   {/* Dimensions */}
                   <div>

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { productsApi, categoriesApi } from '../api';
 import ProductCard from '../components/ProductCard';
 import SEO from '../components/SEO';
+import { getSessionShuffleSeed, seededShuffle } from '../utils/shuffle';
 
 const SORT_OPTIONS = [
   { value: 'createdAt-desc', label: 'Newest First' },
@@ -13,13 +14,18 @@ const SORT_OPTIONS = [
   { value: 'name-asc',       label: 'Name A-Z' },
 ];
 
+const PAGE_SIZE = 20;
+
 export default function Products() {
-  const [filters, setFilters] = useState({ page: 1, limit: 20 });
+  const [filters, setFilters] = useState({ page: 1 });
   const [sortValue, setSortValue] = useState('createdAt-desc');
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const searchTimeoutRef = useRef(null);
+
+  // Retrieve or initialize session seed once per session
+  const sessionSeed = useMemo(() => getSessionShuffleSeed(), []);
 
   const setFilter = useCallback((key, value) => {
     setFilters((f) => ({ ...f, [key]: value, page: 1 }));
@@ -52,9 +58,21 @@ export default function Products() {
 
   const [sort, order] = sortValue.split('-');
 
+  // Default view is when default sort is selected and no search, category, or price filters are active
+  const isDefaultSort = sortValue === 'createdAt-desc';
+  const isDefaultView = isDefaultSort && !filters.search && !filters.category && !filters.minPrice && !filters.maxPrice && !filters.isFeatured;
+
+  // In default view, fetch full catalog to allow session-seeded shuffling across all pages
+  const queryParams = useMemo(() => {
+    if (isDefaultView) {
+      return { ...filters, page: 1, limit: 200 };
+    }
+    return { ...filters, limit: PAGE_SIZE, sort, order };
+  }, [filters, isDefaultView, sort, order]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ['products', filters, sort, order],
-    queryFn: () => productsApi.list({ ...filters, sort, order }).then((r) => r.data),
+    queryKey: ['products', queryParams, sort, order, isDefaultView],
+    queryFn: () => productsApi.list(queryParams).then((r) => r.data),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -64,28 +82,26 @@ export default function Products() {
     staleTime: 1000 * 60 * 30, // 30 minutes - categories change rarely
   });
 
-  const shuffledProducts = useMemo(() => {
-    if (!data?.data) return [];
-    const hasSearch = !!filters.search;
-    const hasMinPrice = !!filters.minPrice;
-    const hasMaxPrice = !!filters.maxPrice;
-    const isDefaultSort = sortValue === 'createdAt-desc';
-
-    if (isDefaultSort && !hasSearch && !hasMinPrice && !hasMaxPrice) {
-      const arr = [...data.data];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
+  const { displayProducts, totalPages, totalCount } = useMemo(() => {
+    const rawList = data?.data || [];
+    if (isDefaultView) {
+      const shuffled = seededShuffle(rawList, sessionSeed);
+      const total = shuffled.length;
+      const pages = Math.ceil(total / PAGE_SIZE);
+      const currentPage = filters.page || 1;
+      const startIdx = (currentPage - 1) * PAGE_SIZE;
+      const paged = shuffled.slice(startIdx, startIdx + PAGE_SIZE);
+      return { displayProducts: paged, totalPages: pages, totalCount: total };
     }
-    return data.data;
-  }, [data?.data, sortValue, filters]);
+    return {
+      displayProducts: rawList,
+      totalPages: data?.meta?.totalPages || 1,
+      totalCount: data?.meta?.total || rawList.length,
+    };
+  }, [data, isDefaultView, sessionSeed, filters.page]);
 
-
-
-  const pageNumbers = data?.meta?.totalPages > 1
-    ? Array.from({ length: data.meta.totalPages }, (_, i) => i + 1)
+  const pageNumbers = totalPages > 1
+    ? Array.from({ length: totalPages }, (_, i) => i + 1)
     : [];
 
   const shopSchema = {
@@ -125,7 +141,7 @@ export default function Products() {
             </h1>
             <div className="flex items-center gap-4">
               <div className="h-0.5 w-8 bg-brand-secondary" />
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">{data?.meta?.total || 0} premium items available</p>
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">{totalCount || 0} premium items available</p>
             </div>
           </div>
 
@@ -281,7 +297,7 @@ export default function Products() {
                 </div>
               ))}
             </div>
-          ) : data?.data?.length === 0 ? (
+          ) : displayProducts.length === 0 ? (
             <div className="card p-16 md:p-24 text-center relative overflow-hidden group">
               <div className="absolute inset-0 bg-linear-to-b from-brand-surface/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               <div className="relative z-10">
@@ -292,7 +308,7 @@ export default function Products() {
                 <p className="text-gray-500 text-sm mb-10 max-w-sm mx-auto font-medium leading-relaxed">Try adjusting your filters or browse our categories to find what you're looking for.</p>
                 <button
                   onClick={() => {
-                    setFilters({ page: 1, limit: 20 });
+                    setFilters({ page: 1 });
                     setSearchInput('');
                   }}
                   className="inline-flex items-center gap-2 px-10 py-4 rounded-pill bg-brand-primary text-white font-bold text-xs uppercase tracking-widest hover:bg-brand-deep transition-all shadow-lg hover:shadow-brand-primary/20 cursor-pointer"
@@ -303,21 +319,21 @@ export default function Products() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {shuffledProducts.map((product) => (
+              {displayProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
 
           {/* Pagination */}
-          {data?.meta?.totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-8 flex-wrap">
               {pageNumbers.map((page) => (
                 <button
                   key={page}
                   onClick={() => setFilters((f) => ({ ...f, page }))}
                   className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all ${
-                    filters.page === page
+                    (filters.page || 1) === page
                       ? 'bg-brand-primary text-white'
                       : 'bg-white text-gray-600 border border-cream-300 hover:border-brand-secondary'
                   }`}

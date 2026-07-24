@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../../store';
 import { serviceAssets } from '../../../../data/assets';
 import { toast } from 'react-hot-toast';
+import CustomDropdown from '../../../../components/CustomDropdown';
 
 import {
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature,
@@ -18,12 +19,12 @@ import ZoomableImage from '../../../../components/ZoomableImage';
 
 const SIDEBAR_LINKS = [
   { id: 'pen', icon: FaPenNib, label: 'Pen', to: '/services/custom-printing/pen', active: true },
-  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels', comingSoon: true },
-  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing', comingSoon: true },
-  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead', comingSoon: true },
-  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag', comingSoon: true },
-  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book', comingSoon: true },
-  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope', comingSoon: true },
+  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels' },
+  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing' },
+  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead' },
+  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag' },
+  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book' },
+  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope' },
 ];
 
 
@@ -108,6 +109,7 @@ export default function LaserPrintedPen() {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
  
     try {
       setLoading(true);
@@ -182,25 +184,14 @@ export default function LaserPrintedPen() {
 
         <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 no-scrollbar">
           {SIDEBAR_LINKS.map((link) => (
-            <div key={link.id} className="relative">
-              <Link
-                to={link.comingSoon ? '#' : link.to}
-                onClick={(e) => link.comingSoon && e.preventDefault()}
-                className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
-                  ? 'bg-[#b65e2e] text-white shadow-lg'
-                  : link.comingSoon
-                    ? 'text-gray-400 cursor-not-allowed opacity-60'
-                    : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
-                  }`}>
-                {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
-                <span className="uppercase tracking-wider">{link.label}</span>
-                {link.comingSoon && (
-                  <span className="ml-auto bg-[#d96a22] text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm">
-                    Soon
-                  </span>
-                )}
-              </Link>
-            </div>
+            <Link key={link.id} to={link.to}
+              className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
+                ? 'bg-[#b65e2e] text-white shadow-lg'
+                : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
+                }`}>
+              {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
+              <span className="uppercase tracking-wider">{link.label}</span>
+            </Link>
           ))}
         </nav>
 
@@ -235,9 +226,11 @@ export default function LaserPrintedPen() {
               {/* SELECT PRODUCT */}
               <div className="mb-8">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Select Product</h3>
-                <select className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#b65e2e]/50 focus:border-[#b65e2e] bg-white">
-                  <option>Laser Printed Pens</option>
-                </select>
+                <CustomDropdown
+                  options={['Laser Printed Pens']}
+                  value="Laser Printed Pens"
+                  placeholder="Select Product"
+                />
               </div>
 
               {/* SELECT DETAIL */}
@@ -258,13 +251,12 @@ export default function LaserPrintedPen() {
                     <label className="flex items-center gap-1.5 text-sm font-semibold text-[#3b71ca] mb-2">
                       <PenTool className="w-3.5 h-3.5" /> Pen Type
                     </label>
-                    <select value={penType} onChange={(e) => setPenType(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#b65e2e]/50 focus:border-[#b65e2e] bg-white">
-                      <option value="">--Select--</option>
-                      {PEN_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                    <CustomDropdown
+                      options={PEN_TYPES}
+                      value={penType}
+                      onChange={(e) => setPenType(e.target.value)}
+                      placeholder="-- Select Pen Type --"
+                    />
                   </div>
 
                   {/* Qty */}
@@ -272,13 +264,12 @@ export default function LaserPrintedPen() {
                     <label className="flex items-center gap-1.5 text-sm font-semibold text-[#3b71ca] mb-2">
                       <Tag className="w-3.5 h-3.5" /> Qty.
                     </label>
-                    <select value={qty} onChange={(e) => setQty(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#b65e2e]/50 focus:border-[#b65e2e] bg-white">
-                      <option value="">--Select--</option>
-                      {QTY_OPTIONS.map((q) => (
-                        <option key={q} value={q}>{q}</option>
-                      ))}
-                    </select>
+                    <CustomDropdown
+                      options={QTY_OPTIONS}
+                      value={qty}
+                      onChange={(e) => setQty(e.target.value)}
+                      placeholder="-- Select Qty --"
+                    />
                   </div>
                 </div>
               </div>

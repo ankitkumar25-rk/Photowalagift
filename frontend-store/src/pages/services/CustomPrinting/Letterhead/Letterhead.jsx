@@ -1,10 +1,13 @@
 import { useState, useMemo, createElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   PenTool, StickyNote, Printer, FileText, Tag, Book, Mail,
   HelpCircle, UploadCloud, AlertTriangle, ShoppingCart, Package, File, Loader2, Truck
 } from 'lucide-react';
 import api from '../../../../api/client';
+import { useAuthStore } from '../../../../store';
+import CustomDropdown from '../../../../components/CustomDropdown';
 import { 
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature, 
   FaTag, FaFileInvoiceDollar, FaEnvelope
@@ -14,12 +17,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const SIDEBAR_LINKS = [
   { id: 'pen', icon: FaPenNib, label: 'Pen', to: '/services/custom-printing/pen' },
-  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels', comingSoon: true },
-  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing', comingSoon: true },
+  { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels' },
+  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing' },
   { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead', active: true },
-  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag', comingSoon: true },
-  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book', comingSoon: true },
-  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope', comingSoon: true },
+  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag' },
+  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book' },
+  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope' },
 ];
 
 
@@ -47,6 +50,7 @@ const PRINTING_OPTIONS = ['Single Side', 'Both Side'];
 
 export default function Letterhead() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const [orderName, setOrderName] = useState('');
   const [selProduct, setSelProduct] = useState('');
   const [printing, setPrinting] = useState('');
@@ -121,6 +125,12 @@ export default function Letterhead() {
         alert('Please fill all mandatory fields and attach file.');
         return;
     }
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
 
     try {
       setLoading(true);
@@ -202,25 +212,14 @@ export default function Letterhead() {
         </div>
         <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 no-scrollbar">
           {SIDEBAR_LINKS.map((link) => (
-            <div key={link.id} className="relative">
-              <Link
-                to={link.comingSoon ? '#' : link.to}
-                onClick={(e) => link.comingSoon && e.preventDefault()}
-                className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
-                  ? 'bg-[#b65e2e] text-white shadow-lg'
-                  : link.comingSoon
-                    ? 'text-gray-400 cursor-not-allowed opacity-60'
-                    : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
-                  }`}>
-                {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
-                <span className="uppercase tracking-wider">{link.label}</span>
-                {link.comingSoon && (
-                  <span className="ml-auto bg-[#d96a22] text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm">
-                    Soon
-                  </span>
-                )}
-              </Link>
-            </div>
+            <Link key={link.id} to={link.to}
+              className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
+                ? 'bg-[#b65e2e] text-white shadow-lg'
+                : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
+                }`}>
+              {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
+              <span className="uppercase tracking-wider">{link.label}</span>
+            </Link>
           ))}
         </nav>
 
@@ -245,13 +244,12 @@ export default function Letterhead() {
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Select Product</label>
-                <select value={selProduct} onChange={(e)=>setSelProduct(e.target.value)}
-                  className="w-full bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-[#b65e2e]/20 outline-none">
-                  <option value="">--Select Product--</option>
-                  {LETTERHEAD_PRODUCTS_LIST.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                <CustomDropdown
+                  options={LETTERHEAD_PRODUCTS_LIST.map(p => ({ value: p.id, label: p.name }))}
+                  value={selProduct}
+                  onChange={(e) => setSelProduct(e.target.value)}
+                  placeholder="--Select Product--"
+                />
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -264,33 +262,42 @@ export default function Letterhead() {
                         <Printer className="w-4 h-4 text-[#a64d24]" />
                         <span className="text-sm font-bold text-gray-700">Printing</span>
                     </div>
-                    <select value={printing} onChange={(e)=>setPrinting(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {PRINTING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={PRINTING_OPTIONS}
+                        value={printing}
+                        onChange={(e) => setPrinting(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div className="w-full sm:w-32 flex items-center gap-2">
                         <Book className="w-4 h-4 text-[#a64d24]" />
                         <span className="text-sm font-bold text-gray-700">Binding</span>
                     </div>
-                    <select value={binding} onChange={(e)=>setBinding(e.target.value)}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {BINDING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={BINDING_OPTIONS}
+                        value={binding}
+                        onChange={(e) => setBinding(e.target.value)}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div className="w-full sm:w-32 flex items-center gap-2">
                         <Tag className="w-4 h-4 text-[#a64d24]" />
                         <span className="text-sm font-bold text-gray-700">Qty.</span>
                     </div>
-                    <select value={qty} onChange={(e)=>setQty(Number(e.target.value))}
-                      className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                      <option value="">--Select--</option>
-                      {QUANTITY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    <div className="w-full sm:flex-1">
+                      <CustomDropdown
+                        options={QUANTITY_OPTIONS}
+                        value={qty}
+                        onChange={(e) => setQty(Number(e.target.value))}
+                        placeholder="--Select--"
+                      />
+                    </div>
                   </div>
                   {selected?.gsm === '115 GSM' && (
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -298,11 +305,14 @@ export default function Letterhead() {
                           <Tag className="w-4 h-4 text-[#a64d24]" />
                           <span className="text-sm font-bold text-gray-700">Cutting Type</span>
                       </div>
-                      <select value={cuttingType} onChange={(e)=>setCuttingType(e.target.value)}
-                        className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                        <option value="">--Select--</option>
-                        {CUTTING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
+                      <div className="w-full sm:flex-1">
+                        <CustomDropdown
+                          options={CUTTING_OPTIONS}
+                          value={cuttingType}
+                          onChange={(e) => setCuttingType(e.target.value)}
+                          placeholder="--Select--"
+                        />
+                      </div>
                     </div>
                   )}
                   {/* Dynamic Finishing: Spot UV */}
@@ -314,11 +324,14 @@ export default function Letterhead() {
                           </div>
                           <span className="text-sm font-bold text-gray-700">Spot UV</span>
                       </div>
-                      <select value={finishing} onChange={(e)=>setFinishing(e.target.value)}
-                        className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                        <option value="">--Select--</option>
-                        <option value="Front Side">Front Side</option>
-                      </select>
+                      <div className="w-full sm:flex-1">
+                        <CustomDropdown
+                          options={['Front Side']}
+                          value={finishing}
+                          onChange={(e) => setFinishing(e.target.value)}
+                          placeholder="--Select--"
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -332,11 +345,14 @@ export default function Letterhead() {
                             </div>
                             <span className="text-sm font-bold text-gray-700">Foil</span>
                         </div>
-                        <select value={foilSide} onChange={(e)=>setFoilSide(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select--</option>
-                          <option value="Front Side">Front Side</option>
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={['Front Side']}
+                            value={foilSide}
+                            onChange={(e) => setFoilSide(e.target.value)}
+                            placeholder="--Select--"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <div className="w-full sm:w-32 flex items-center gap-2">
@@ -345,13 +361,14 @@ export default function Letterhead() {
                             </div>
                             <span className="text-sm font-bold text-gray-700">Foil Color</span>
                         </div>
-                        <select value={foilColor} onChange={(e)=>setFoilColor(e.target.value)}
-                          className="w-full sm:flex-1 bg-[#fffaf5] border border-[#e8dfd5] rounded-xl px-4 py-3 text-sm outline-none">
-                          <option value="">--Select--</option>
-                          <option value="Gold">Gold</option>
-                          <option value="Silver">Silver</option>
-                          <option value="Copper">Copper</option>
-                        </select>
+                        <div className="w-full sm:flex-1">
+                          <CustomDropdown
+                            options={['Gold', 'Silver', 'Copper']}
+                            value={foilColor}
+                            onChange={(e) => setFoilColor(e.target.value)}
+                            placeholder="--Select--"
+                          />
+                        </div>
                       </div>
                     </div>
                   )}

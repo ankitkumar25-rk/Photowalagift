@@ -7,8 +7,8 @@ import {
   Minus, Check, Award, Package, AlertCircle, ZoomIn,
   MessageSquare, Pencil, ImagePlus, X
 } from 'lucide-react';
-import { 
-  MdSecurity, MdLocalShipping, MdAssignmentReturn 
+import {
+  MdSecurity, MdLocalShipping, MdAssignmentReturn
 } from 'react-icons/md';
 import toast from 'react-hot-toast';
 import { productsApi, usersApi, uploadApi } from '../api';
@@ -27,11 +27,10 @@ function StarRating({ rating, size = 'sm', interactive = false, onChange }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={`${sz} transition-colors ${
-            n <= (interactive ? hovered || rating : rating)
+          className={`${sz} transition-colors ${n <= (interactive ? hovered || rating : rating)
               ? 'text-brand-secondary fill-amber-400'
               : 'text-gray-200 fill-gray-200'
-          } ${interactive ? 'cursor-pointer' : ''}`}
+            } ${interactive ? 'cursor-pointer' : ''}`}
           onMouseEnter={() => interactive && setHovered(n)}
           onMouseLeave={() => interactive && setHovered(0)}
           onClick={() => interactive && onChange?.(n)}
@@ -61,9 +60,9 @@ function ImageGallery({ images, name }) {
   return (
     <div className="space-y-4">
       {/* Main image with zoom */}
-      <ZoomableImage 
-        src={images[active]?.url} 
-        alt={images[active]?.altText || name} 
+      <ZoomableImage
+        src={images[active]?.url}
+        alt={images[active]?.altText || name}
         className="aspect-square rounded-3xl overflow-hidden bg-cream-100 border border-cream-200 group shadow-lg"
       />
 
@@ -74,18 +73,17 @@ function ImageGallery({ images, name }) {
             <button
               key={img.id || i}
               onClick={() => setActive(i)}
-              className={`shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
-                i === active 
-                  ? 'border-brand-primary shadow-lg scale-105' 
+              className={`shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all duration-300 ${i === active
+                  ? 'border-brand-primary shadow-lg scale-105'
                   : 'border-cream-200 hover:border-brand-primary hover:scale-105'
-              }`}
+                }`}
             >
-               <img 
-                 src={img.url} 
-                 alt={img.altText || name} 
-                 className="w-full h-full object-cover" 
-                 loading="lazy" 
-               />
+              <img
+                src={img.url}
+                alt={img.altText || name}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </button>
           ))}
         </div>
@@ -104,9 +102,9 @@ function ReviewCard({ review }) {
     <div className="p-5 rounded-2xl bg-white border border-cream-200 space-y-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-           {review.user?.avatarUrl ? (
-             <img src={review.user.avatarUrl} alt={review.user.name} className="w-9 h-9 rounded-full object-cover" loading="lazy" width={36} height={36} />
-           ) : (
+          {review.user?.avatarUrl ? (
+            <img src={review.user.avatarUrl} alt={review.user.name} className="w-9 h-9 rounded-full object-cover" loading="lazy" width={36} height={36} />
+          ) : (
             <div className="w-9 h-9 rounded-full bg-brand-surface text-brand-primary flex items-center justify-center text-sm font-bold shrink-0">
               {review.user?.name?.[0]?.toUpperCase() || 'U'}
             </div>
@@ -195,15 +193,15 @@ function ReviewForm({ productId, onSuccess }) {
 export default function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const addItem  = useCartStore((s) => s.addItem);
-  const user     = useAuthStore((s) => s.user);
+  const addItem = useCartStore((s) => s.addItem);
+  const user = useAuthStore((s) => s.user);
   const location = useLocation();
   const { isWishlisted, toggleWishlist: triggerWishlist, isPending: isWishlistPending } = useWishlist();
 
-  const [product, setProduct]   = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [related, setRelated]   = useState([]);
-  const [qty, setQty]           = useState(1);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [related, setRelated] = useState([]);
+  const [qty, setQty] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
@@ -211,10 +209,10 @@ export default function ProductDetail() {
 
   // Customization state
   const [customizeEnabled, setCustomizeEnabled] = useState(false);
-  const [customizeMode, setCustomizeMode]       = useState('text'); // 'text' | 'image'
+  const [customizeMode, setCustomizeMode] = useState('text'); // 'text' | 'image'
   const [customizationText, setCustomizationText] = useState('');
   const [customizationImage, setCustomizationImage] = useState(null);   // { url, publicId }
-  const [uploadingImage, setUploadingImage]     = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
 
   const fetchProduct = useCallback(async () => {
@@ -236,7 +234,7 @@ export default function ProductDetail() {
       toast.error('Product not found');
       navigate('/products');
     } finally { setLoading(false); }
-   }, [slug, navigate]);
+  }, [slug, navigate]);
 
   useEffect(() => { fetchProduct(); setQty(1); }, [fetchProduct]);
 
@@ -252,7 +250,7 @@ export default function ProductDetail() {
         return;
       }
     }
-    
+
     if (redirectToCheckOut) {
       setBuyingNow(true);
     } else {
@@ -262,12 +260,12 @@ export default function ProductDetail() {
     try {
       const customization = customizeEnabled
         ? (customizeMode === 'text'
-            ? { customizationText: customizationText.trim() }
-            : { customizationImageUrl: customizationImage.url })
+          ? { customizationText: customizationText.trim() }
+          : { customizationImageUrl: customizationImage.url })
         : {};
       await addItem(product.id, qty, customization);
       trackAddToCart(product, qty);
-      
+
       if (redirectToCheckOut) {
         navigate('/checkout');
       } else {
@@ -333,7 +331,7 @@ export default function ProductDetail() {
 
   const removeCustomizationImage = async () => {
     if (customizationImage?.publicId) {
-      uploadApi.deleteImage(customizationImage.publicId).catch(() => {});
+      uploadApi.deleteImage(customizationImage.publicId).catch(() => { });
     }
     setCustomizationImage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -370,7 +368,7 @@ export default function ProductDetail() {
 
   const TABS = [
     { id: 'description', label: 'Description' },
-    { id: 'reviews',     label: `Reviews (${product._count?.reviews || 0})` },
+    { id: 'reviews', label: `Reviews (${product._count?.reviews || 0})` },
   ];
 
   const productSchema = {
@@ -572,9 +570,9 @@ export default function ProductDetail() {
                     {customizeMode === 'image' && (
                       <div>
                         {customizationImage ? (
-                           <div className="relative inline-block">
-                             <img src={customizationImage.url} alt="Customization" className="w-24 h-24 object-cover rounded-xl border-2 border-brand-primary" loading="lazy" width={96} height={96} />
-                             <button
+                          <div className="relative inline-block">
+                            <img src={customizationImage.url} alt="Customization" className="w-24 h-24 object-cover rounded-xl border-2 border-brand-primary" loading="lazy" width={96} height={96} />
+                            <button
                               onClick={removeCustomizationImage}
                               className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow"
                             >
@@ -671,11 +669,10 @@ export default function ProductDetail() {
                       <button
                         onClick={toggleWishlist}
                         disabled={isWishlistPending}
-                        className={`w-14 rounded-2xl border-2 flex items-center justify-center transition-all cursor-pointer ${
-                          inWishlist
+                        className={`w-14 rounded-2xl border-2 flex items-center justify-center transition-all cursor-pointer ${inWishlist
                             ? 'border-red-400 bg-red-50 text-red-500 hover:bg-red-100'
                             : 'border-cream-300 hover:border-red-300 text-gray-400 hover:text-red-400 hover:bg-red-50'
-                        }`}
+                          }`}
                         aria-label="Wishlist"
                       >
                         <Heart className={`w-5 h-5 ${inWishlist ? 'fill-red-400 text-red-400' : ''}`} />
@@ -701,12 +698,12 @@ export default function ProductDetail() {
                 <ShoppingCart className="w-4 h-4" /> View Cart
               </Link>
             </div>
-            
+
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-3 pt-2 border-t border-cream-200">
               {[
                 { icon: <MdSecurity className="w-5 h-5 text-brand-primary" />, label: 'Secure Payment', sub: 'SSL encrypted' },
-                { icon: <MdLocalShipping className="w-5 h-5 text-brand-primary" />, label: 'Fast Delivery',  sub: 'Free above ₹999' },
+                { icon: <MdLocalShipping className="w-5 h-5 text-brand-primary" />, label: 'Fast Delivery', sub: 'Free above ₹999' },
                 { icon: <MdAssignmentReturn className="w-5 h-5 text-brand-primary" />, label: 'Easy Returns', sub: '7-day policy' },
               ].map(({ icon, label, sub }) => (
                 <div key={label} className="flex flex-col items-center text-center gap-1 p-3 bg-cream-50 rounded-2xl">
@@ -751,11 +748,10 @@ export default function ProductDetail() {
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`px-6 py-4 text-sm font-semibold whitespace-nowrap transition-all border-b-2 ${
-                  activeTab === id
+                className={`px-6 py-4 text-sm font-semibold whitespace-nowrap transition-all border-b-2 ${activeTab === id
                     ? 'border-brand-primary text-brand-primary bg-white'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-cream-100'
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -775,10 +771,10 @@ export default function ProductDetail() {
                 {/* SKU / weight */}
                 <div className="grid sm:grid-cols-2 gap-4 not-prose pt-4 border-t border-cream-200">
                   {[
-                    { label: 'Size',     value: product.unit || '—' },
-                    { label: 'Weight',   value: product.weight ? `${product.weight}g` : '—' },
+                    { label: 'Size', value: product.unit || '—' },
+                    { label: 'Weight', value: product.weight ? `${product.weight}g` : '—' },
                     { label: 'Category', value: product.category?.name || '—' },
-                    { label: 'SKU',      value: product.sku || '—' },
+                    { label: 'SKU', value: product.sku || '—' },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between py-2 border-b border-cream-100 text-sm">
                       <span className="text-gray-500 font-medium">{label}</span>
@@ -866,7 +862,7 @@ export default function ProductDetail() {
                 You Might Also Like
               </h2>
               <Link to={`/categories/${product.category?.slug}`} className="text-sm font-semibold text-brand-primary hover:text-brand-primary transition-colors">
-                View all ?
+                View all
               </Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

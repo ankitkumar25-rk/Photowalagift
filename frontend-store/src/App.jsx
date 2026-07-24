@@ -178,17 +178,17 @@ export default function App() {
                   <Route path="services"         element={<Services />} />
                   <Route path="services/custom-printing" element={<CustomPrintingIndex />} />
                   <Route path="services/custom-printing/pen" element={<LaserPrintedPen />} />
-                  <Route path="services/custom-printing/letterhead" element={<ComingSoon service="Letterhead" />} />
-                  <Route path="services/custom-printing/envelope" element={<ComingSoon service="Envelope" />} />
-                  <Route path="services/custom-printing/sticker-labels" element={<ComingSoon service="Sticker Labels" />} />
-                  <Route path="services/custom-printing/sticker-labels/:type" element={<ComingSoon service="Sticker Labels" />} />
-                  <Route path="services/custom-printing/garment-tag" element={<ComingSoon service="Garment Tag" />} />
-                  <Route path="services/custom-printing/garment-thread" element={<ComingSoon service="Garment Thread" />} />
-                  <Route path="services/custom-printing/garment-gloss" element={<ComingSoon service="Garment Gloss" />} />
-                  <Route path="services/custom-printing/garment-matt" element={<ComingSoon service="Garment Matt" />} />
-                  <Route path="services/custom-printing/garment-uv" element={<ComingSoon service="Garment UV" />} />
-                  <Route path="services/custom-printing/bill-book" element={<ComingSoon service="Bill Book" />} />
-                  <Route path="services/custom-printing/digital-printing" element={<ComingSoon service="Digital Printing" />} />
+                  <Route path="services/custom-printing/letterhead" element={<Letterhead />} />
+                  <Route path="services/custom-printing/envelope" element={<Envelope />} />
+                  <Route path="services/custom-printing/sticker-labels" element={<StickerLabels />} />
+                  <Route path="services/custom-printing/sticker-labels/:type" element={<StickerLabels />} />
+                  <Route path="services/custom-printing/garment-tag" element={<GarmentTag />} />
+                  <Route path="services/custom-printing/garment-thread" element={<GarmentTag />} />
+                  <Route path="services/custom-printing/garment-gloss" element={<GarmentTag />} />
+                  <Route path="services/custom-printing/garment-matt" element={<GarmentTag />} />
+                  <Route path="services/custom-printing/garment-uv" element={<GarmentTag />} />
+                  <Route path="services/custom-printing/bill-book" element={<BillBook />} />
+                  <Route path="services/custom-printing/digital-printing" element={<DigitalPrinting />} />
                   <Route path="services/machine-services/co2-laser" element={<CO2LaserService />} />
                   <Route path="services/machine-services/laser-marking" element={<LaserMarkingService />} />
                   <Route path="services/machine-services/cnc-router" element={<CNCRouterService />} />

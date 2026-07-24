@@ -1,10 +1,13 @@
 import { useState, useMemo, useEffect, createElement } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   PenTool, StickyNote, Printer, FileText, Tag, Book, Mail,
   UploadCloud, ShoppingCart, HelpCircle, ChevronLeft, CheckCircle2, Info, Loader2, Paperclip
 } from 'lucide-react';
 import api from '../../../../api/client';
+import { useAuthStore } from '../../../../store';
+import CustomDropdown from '../../../../components/CustomDropdown';
 import { 
   FaPenNib, FaNoteSticky, FaPrint, FaFileSignature, 
   FaTag, FaFileInvoiceDollar, FaEnvelope, FaRegSquare, FaRegCircle, FaBorderAll
@@ -13,11 +16,11 @@ import {
 const SIDEBAR_LINKS = [
   { id: 'pen', icon: FaPenNib, label: 'Pen', to: '/services/custom-printing/pen' },
   { id: 'sticker', icon: FaNoteSticky, label: 'Sticker Labels', to: '/services/custom-printing/sticker-labels', active: true },
-  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing', comingSoon: true },
-  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead', comingSoon: true },
-  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag', comingSoon: true },
-  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book', comingSoon: true },
-  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope', comingSoon: true },
+  { id: 'digital', icon: FaPrint, label: 'Digital Paper Printing', to: '/services/custom-printing/digital-printing' },
+  { id: 'letterhead', icon: FaFileSignature, label: 'Letterhead', to: '/services/custom-printing/letterhead' },
+  { id: 'garment', icon: FaTag, label: 'Garment Tag', to: '/services/custom-printing/garment-tag' },
+  { id: 'billbook', icon: FaFileInvoiceDollar, label: 'Bill Book', to: '/services/custom-printing/bill-book' },
+  { id: 'envelope', icon: FaEnvelope, label: 'Envelope', to: '/services/custom-printing/envelope' },
 ];
 
 
@@ -60,7 +63,8 @@ const STRAIGHT_OPTIONS = [
 export default function StickerLabels() {
   const navigate = useNavigate();
   const { type } = useParams();
-  const currentType = type; // No default to 'no-cut'
+  const currentType = type || 'no-cut';
+  const user = useAuthStore((s) => s.user);
 
   // State
   const [orderName, setOrderName]           = useState('');
@@ -163,6 +167,12 @@ export default function StickerLabels() {
 
   const handleAddOrder = async () => {
     if (!canOrder) return;
+    if (!user) {
+      toast.error('Please login or sign up to place an order.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+    toast.error('Price is not set by the provider, you can contact them..', { duration: 2000 });
     
     try {
       setLoading(true);
@@ -239,25 +249,14 @@ export default function StickerLabels() {
         </div>
         <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 no-scrollbar">
           {SIDEBAR_LINKS.map((link) => (
-            <div key={link.id} className="relative">
-              <Link
-                to={link.comingSoon ? '#' : link.to}
-                onClick={(e) => link.comingSoon && e.preventDefault()}
-                className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
-                  ? 'bg-[#b65e2e] text-white shadow-lg'
-                  : link.comingSoon
-                    ? 'text-gray-400 cursor-not-allowed opacity-60'
-                    : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
-                  }`}>
-                {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
-                <span className="uppercase tracking-wider">{link.label}</span>
-                {link.comingSoon && (
-                  <span className="ml-auto bg-[#d96a22] text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm">
-                    Soon
-                  </span>
-                )}
-              </Link>
-            </div>
+            <Link key={link.id} to={link.to}
+              className={`flex items-center gap-3 px-4 py-2.5 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold transition-all whitespace-nowrap ${link.active
+                ? 'bg-[#b65e2e] text-white shadow-lg'
+                : 'text-gray-500 hover:bg-[#e8dfd5] hover:text-gray-900'
+                }`}>
+              {createElement(link.icon, { className: `w-3.5 h-3.5 md:w-4 h-4 shrink-0 ${link.active ? '' : 'text-gray-400'}` })}
+              <span className="uppercase tracking-wider">{link.label}</span>
+            </Link>
           ))}
         </nav>
 
@@ -335,40 +334,34 @@ export default function StickerLabels() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Sheet Size</label>
-                    <select 
+                    <CustomDropdown
+                      options={SHEET_SIZES}
                       value={sheetSize}
                       onChange={(e) => setSheetSize(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:outline-none focus:border-[#b65e2e] appearance-none"
-                    >
-                      <option value="">--Select--</option>
-                      {SHEET_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                      placeholder="--Select--"
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Lamination</label>
-                  <select 
+                  <CustomDropdown
+                    options={LAMINATION_OPTIONS}
                     value={lamination}
                     onChange={(e) => setLamination(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:outline-none focus:border-[#b65e2e] appearance-none"
-                  >
-                    <option value="">--Select--</option>
-                    {LAMINATION_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
+                    placeholder="--Select--"
+                  />
                 </div>
 
                 {config.hasCount && (
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Stickers Count Per Sheet</label>
-                    <select 
+                    <CustomDropdown
+                      options={config.options}
                       value={stickerCount}
                       onChange={(e) => setStickerCount(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 focus:outline-none focus:border-[#b65e2e] appearance-none"
-                    >
-                      <option value="">--Select--</option>
-                      {config.options.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                      placeholder="--Select--"
+                    />
                   </div>
                 )}
 
