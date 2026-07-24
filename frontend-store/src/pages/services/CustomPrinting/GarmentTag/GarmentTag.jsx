@@ -439,8 +439,8 @@ export default function GarmentTag() {
               )}
 
               {/* Detail Dropdowns */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-white px-6 py-4 border-b border-gray-100">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible">
+                <div className="bg-white px-6 py-4 border-b border-gray-100 rounded-t-2xl">
                   <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Select Detail</h3>
                 </div>
                 <div className="p-4 md:p-6 space-y-6">

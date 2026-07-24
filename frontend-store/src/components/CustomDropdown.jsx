@@ -13,6 +13,7 @@ export default function CustomDropdown({
   required = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const dropdownRef = useRef(null);
   const generatedId = useId();
   const dropdownId = id || generatedId;
@@ -44,6 +45,21 @@ export default function CustomDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Smart direction detection (open upward if near bottom of screen)
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // If less than 240px below and more space above, open upward
+      if (spaceBelow < 240 && spaceAbove > spaceBelow) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
+    }
+  }, [isOpen]);
+
   // Handle item selection
   const handleSelect = (optVal) => {
     if (disabled) return;
@@ -64,7 +80,7 @@ export default function CustomDropdown({
   return (
     <div
       ref={dropdownRef}
-      className={`relative inline-block w-full ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${className}`}
+      className={`relative inline-block w-full ${isOpen ? 'z-50' : 'z-10'} ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${className}`}
     >
       <button
         type="button"
@@ -90,7 +106,9 @@ export default function CustomDropdown({
       {isOpen && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 z-50 mt-1.5 max-h-60 overflow-y-auto bg-white border border-cream-200 rounded-xl shadow-xl py-1 text-sm animate-in fade-in zoom-in-95 duration-150"
+          className={`absolute left-0 right-0 z-50 ${
+            openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          } max-h-60 overflow-y-auto bg-white border border-cream-200 rounded-xl shadow-2xl py-1 text-sm animate-in fade-in zoom-in-95 duration-150`}
         >
           {placeholder && (
             <div

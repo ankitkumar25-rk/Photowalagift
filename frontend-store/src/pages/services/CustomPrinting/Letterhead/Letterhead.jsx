@@ -252,8 +252,8 @@ export default function Letterhead() {
                 />
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible">
+                <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 rounded-t-2xl">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Detail</h3>
                 </div>
                 <div className="p-4 md:p-6 space-y-6">

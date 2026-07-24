@@ -215,8 +215,8 @@ export default function BillBook() {
                 />
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-[#fffaf5] px-6 py-4 border-b border-[#e8dfd5]">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible">
+                <div className="bg-[#fffaf5] px-6 py-4 border-b border-[#e8dfd5] rounded-t-2xl">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Order Details</h3>
                 </div>
                 <div className="p-4 md:p-6 space-y-6">
