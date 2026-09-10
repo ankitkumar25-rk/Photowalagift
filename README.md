@@ -2,7 +2,7 @@
 
 A comprehensive and secure e-commerce platform specifically designed for selling premium gifts, trophies, and mementos. This project features a robust backend API, a customer-facing storefront, and a powerful administrative dashboard.
 
-## 🚀 Architecture & Tech Stack
+## Architecture & Tech Stack
 
 ### Backend
 - **Core**: Node.js with Express.js
@@ -22,7 +22,7 @@ A comprehensive and secure e-commerce platform specifically designed for selling
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```bash
 .
@@ -33,7 +33,7 @@ A comprehensive and secure e-commerce platform specifically designed for selling
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Advanced Accounts**: Email/Password login, Google Social Login, Email Verification via SMTP (Resend), and Password Recovery.
 - **Catalog Management**: Hierarchical categories, dynamic product filtering (price, category), and smart sorting.
@@ -44,7 +44,7 @@ A comprehensive and secure e-commerce platform specifically designed for selling
 
 ---
 
-## 🛠️ Setup & Installation
+## Setup & Installation
 
 ### 1. Prerequisites
 - Node.js (v18+)
@@ -83,7 +83,7 @@ npm run dev
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
 ### Backend
 The backend requires the following configuration in `.env`:
@@ -112,7 +112,7 @@ The frontend requires:
 
 ---
 
-## 🛡️ Security Features
+## Security Features
 - **PASETO**: Modern, secure alternative to JWT.
 - **Rate Limiting**: Redis-backed protection against brute force and DDoS.
 - **Secure Headers**: Using Helmet.js for XSS and Clickjacking protection.
@@ -120,5 +120,5 @@ The frontend requires:
 
 ---
 
-## 📄 License
+## License
 This project is licensed under the ISC License.
